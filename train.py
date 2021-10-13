@@ -14,6 +14,8 @@ from model import NeuralNet
 
 import numpy as np
 
+from constants import *
+
 INTENTS_FILE_PATH: str = 'intents.json'
 
 class TrainData():
@@ -28,18 +30,18 @@ class TrainData():
         with open(INTENTS_FILE_PATH, 'r') as file:
             intents = json.load(file)
 
-            for intent in intents['intents']:
-                tag = intent['tag']
+            for intent in intents[INTENTS]:
+                tag = intent[TAG]
                 self.tags.append(tag)
 
-                for pattern in intent['patterns']:
+                for pattern in intent[PATTERNS]:
                     word = tokenize(pattern)
                     self.all_words.extend(word)
                     self.X_y.append((word, tag))
 
             self.all_words = [stemming(word) for word in self.all_words if word not in self.ignore_words]
             self.all_words = get_sorted_unique_string_list(self.all_words)
-            tags = get_sorted_unique_string_list(self.tags)
+            self.tags = get_sorted_unique_string_list(self.tags)
 
             self.X_train = []
             self.y_train = []
@@ -48,7 +50,7 @@ class TrainData():
                 bag = bag_of_words(pattern_sentence, self.all_words)
                 self.X_train.append(bag)
 
-                label = tags.index(tag)
+                label = self.tags.index(tag)
                 self.y_train.append(label) # CrossEntropyLoss
 
 
@@ -83,9 +85,9 @@ def main():
     train_data = TrainData()
 
     # Hyperparameters
-    batch_size: int = 8
+    batch_size: int = 16
     input_size = len(train_data.all_words)
-    hidden_size = 8
+    hidden_size = 16
     output_size = len(train_data.tags)
     learning_rate = 0.001
     num_epoch = 1000
@@ -128,12 +130,12 @@ def main():
     print(f'final loss={loss.item():4f}')
 
     data = {
-        'model_state': model.state_dict(),
-        'input_size': input_size,
-        'output_size': output_size,
-        'hidden_size': hidden_size,
-        'all_words': train_data.all_words,
-        'tags': train_data.tags
+        MODEL_STATE: model.state_dict(),
+        INPUT_SIZE: input_size,
+        OUTPUT_SIZE: output_size,
+        HIDDEN_SIZE: hidden_size,
+        ALL_WORDS: train_data.all_words,
+        TAGS: train_data.tags
     }
 
     file_name = 'data.pth'
