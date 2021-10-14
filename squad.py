@@ -2,7 +2,7 @@
 
 import json
 from typing import Any, Dict, List, Tuple
-from copy import copy
+from copy import copy, deepcopy
 
 from torch.utils import data
 
@@ -27,6 +27,10 @@ class Paragraphs():
         self.context = paragraph_entry[CONTEXT_KEY]
         self.question_answer_sets: List[Question_Answer_Set] = [Question_Answer_Set(data) for data in paragraph_entry[QUESTION_ANSWER_SET_KEY]]
 
+    def __getitem__(self, index) -> Question_Answer_Set:
+        qas = deepcopy(self.question_answer_sets[index])
+        return qas
+
 
 TITLE_KEY: str = 'title'
 PARAGRAPHS_KEY: str = 'paragraphs'
@@ -36,6 +40,10 @@ class Squad_Data():
         self.title: str = entry[TITLE_KEY]
         self.paragraphs: List[Paragraphs] = [Paragraphs(data) for data in entry[PARAGRAPHS_KEY]]
 
+    def __getitem__(self, index) -> Paragraphs:
+        paragraph = deepcopy(self.paragraphs[index])
+        return paragraph
+
 
 VERSION_KEY: str = 'version'
 DATA_KEY: str = 'data'
@@ -44,6 +52,10 @@ class Squad():
     # The Stanford Question Answering Dataset 2.0
     def __init__(self, data_list: list) -> None:
         self.data_list: List[Squad_Data] = [Squad_Data(data) for data in data_list]
+
+    def __getitem__(self, index) -> Squad_Data:
+        squad_data = deepcopy(self.data_list[index])
+        return squad_data
 
 with open('squad_dataset.json', 'r') as file:
     training_questions = json.load(file)
