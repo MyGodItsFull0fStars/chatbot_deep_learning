@@ -6,14 +6,9 @@ from copy import copy
 
 from torch.utils import data
 
-VERSION_KEY: str = 'version'
-DATA_KEY: str = 'data'
-
-TITLE_KEY: str = 'title'
-PARAGRAPHS_KEY: str = 'paragraphs'
-
-CONTEXT_KEY: str = 'context'
-QAS_KEY: str = 'qas'
+QUESTION_KEY: str = 'question'
+ANSWERS_KEY: str = 'answers'
+PLAUSIBLE_ANSWERS_KEY: str = 'plausible_answers'
 
 class Question_Answer_Set(object):
     
@@ -22,15 +17,19 @@ class Question_Answer_Set(object):
         self.question = qas_entry['question']
         self.is_impossible = qas_entry['is_impossible']
         # if it is impossible to verify, the answers are considered as plausible answers
-        self.answers = qas_entry['plausible_answers' if self.is_impossible == True else 'answers']
+        self.answers = qas_entry[PLAUSIBLE_ANSWERS_KEY if self.is_impossible == True else ANSWERS_KEY]
 
+CONTEXT_KEY: str = 'context'
+QUESTION_ANSWER_SET_KEY: str = 'qas'
 class Paragraphs():
 
     def __init__(self, paragraph_entry) -> None:
         self.context = paragraph_entry[CONTEXT_KEY]
-        self.question_answer_sets: List[Question_Answer_Set] = [Question_Answer_Set(data) for data in paragraph_entry['qas']]
+        self.question_answer_sets: List[Question_Answer_Set] = [Question_Answer_Set(data) for data in paragraph_entry[QUESTION_ANSWER_SET_KEY]]
 
 
+TITLE_KEY: str = 'title'
+PARAGRAPHS_KEY: str = 'paragraphs'
 class Squad_Data():
 
     def __init__(self, entry) -> None:
@@ -38,12 +37,15 @@ class Squad_Data():
         self.paragraphs: List[Paragraphs] = [Paragraphs(data) for data in entry[PARAGRAPHS_KEY]]
 
 
+VERSION_KEY: str = 'version'
+DATA_KEY: str = 'data'
+
 class Squad():
     # The Stanford Question Answering Dataset 2.0
     def __init__(self, data_list: list) -> None:
         self.data_list: List[Squad_Data] = [Squad_Data(data) for data in data_list]
 
-with open('train-v2.0.json', 'r') as file:
+with open('squad_dataset.json', 'r') as file:
     training_questions = json.load(file)
     
     # x = json.loads(json.dumps(training_questions), object_hook=lambda d: SimpleNamespace(**d))
