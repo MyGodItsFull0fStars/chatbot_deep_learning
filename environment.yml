@@ -1,0 +1,9 @@
+name: chat_bot_env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - anaconda
+  - pytorch
+prefix: /Users/christianbauer/opt/anaconda3/envs/chat_bot_env
