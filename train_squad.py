@@ -23,75 +23,77 @@ import numpy as np
 from squad import *
 from constants import *
 
-SQUAD_FILE_PATH: str = "squad_dataset.json"
+SQUAD_FILE_PATH: str = 'squad_dataset.json'
 
 
 class TrainData:
     def __init__(self) -> None:
 
-        self.ignore_words = ["?", "!", ".", ",", ";"]
-        self.all_words = []
+        self.ignore_words = ['?', '!', '.', ',', ';']
+        self.all_words = self.get_all_words()
         self.X_y = []
-        self.tags = []
+        self.tags = self.get_tags()
+        self.X_train = []
+        self.y_train = []
 
-        with open(SQUAD_FILE_PATH, "r") as file:
+        with open(SQUAD_FILE_PATH, 'r') as file:
             squad_json = json.load(file)
 
             squad = Squad(squad_json)
 
-            squad_data_list = squad.data_list
-
-            print("get tags, all words and X_y set")
-            for squad_data in squad_data_list:
-
+            for squad_data in squad.data_list:
                 tag = squad_data.title
-                self.tags.append(tag)
                 for paragraph in squad_data.paragraphs:
                     # TODO maybe insert again for better results
                     # self.tags.append(paragraph.context)
 
                     for qas in paragraph.question_answer_sets:
                         question = tokenize(qas.question)
-                        self.all_words.extend(question)
                         self.X_y.append((question, tag))
 
-            print("stem all words")
-            self.all_words = [
-                stemming(word)
-                for word in self.all_words
-                if word not in self.ignore_words
-            ]
-            self.all_words = get_sorted_unique_string_list(self.all_words)
-            self.tags = get_sorted_unique_string_list(self.tags)
+            
+            self.create_bag_of_words()
 
-            self.X_train = []
-            self.y_train = []
 
-            print("create bag of words")
+    def create_bag_of_words(self):
+        all_words_dict = self.get_all_words_dict(self.all_words)
 
-            all_words_dict = self.get_all_words_dict()
-            # del self.all_words
+        for (pattern_sentence, tag) in self.X_y:
+            bag = bag_of_words(pattern_sentence, all_words_dict)
+            self.X_train.append(bag)
 
-            for (pattern_sentence, tag) in self.X_y:
-                bag = bag_of_words(pattern_sentence, all_words_dict)
-                self.X_train.append(bag)
+            label = self.tags.index(tag)
+            self.y_train.append(label)
 
-                label = self.tags.index(tag)
-                self.y_train.append(label)
+        self.X_train = np.array(self.X_train)
+        self.y_train = np.array(self.y_train)
 
-            self.X_train = np.array(self.X_train)
-            self.y_train = np.array(self.y_train)
 
     def get_X_y_train(self):
         return self.X_train, self.y_train
 
-    def get_all_words_dict(self) -> Dict[str, int]:
+
+    def get_all_words_dict(self, all_words) -> Dict[str, int]:
         all_words_dict = {}
 
-        for idx, word in enumerate(self.all_words):
+        for idx, word in enumerate(all_words):
             all_words_dict[word] = idx
 
         return all_words_dict
+
+    def get_all_words(self) -> List[str]:
+        with open('all_words.txt', 'r') as word_file:
+            word_str = word_file.read()
+            all_words = word_str.split(' ')
+
+            return all_words
+
+    def get_tags(self) -> List[str]:
+        with open('tags.txt', 'r') as tags_file:
+            tags_str = tags_file.read()
+            tags = tags_str.split(' ')
+
+            return tags
 
 
 class ChatDataSet(Dataset):
@@ -135,7 +137,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    print("Start training")
+    print('Start training')
 
     # training loop
     for epoch in range(num_epoch):
@@ -155,9 +157,9 @@ def main():
             optimizer.step()
 
         if (epoch + 1) % 100 == 0:
-            print(f"epoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}")
+            print(f'epoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}')
 
-    print(f"final loss={loss.item():4f}")
+    print(f'final loss={loss.item():4f}')
 
     data = {
         MODEL_STATE: model.state_dict(),
@@ -168,11 +170,12 @@ def main():
         TAGS: train_data.tags,
     }
 
-    file_name = "data.pth"
+    file_name = 'data.pth'
     torch.save(data, file_name)
 
-    print(f"training complete. file saved to {file_name}")
+    print(f'training complete. file saved to {file_name}')
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    # main()
+    train = TrainData()
