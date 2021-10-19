@@ -1,4 +1,4 @@
-# source: https://www.youtube.com/watch?v=8qwowmiXANQ
+# dataset source: https://rajpurkar.github.io/SQuAD-explorer/
 import json
 from typing import List, Tuple
 
@@ -14,30 +14,39 @@ from model import NeuralNet
 
 import numpy as np
 
+from squad import *
 from constants import *
 
-INTENTS_FILE_PATH: str = 'intents.json'
+SQUAD_FILE_PATH: str = 'squad_dataset.json'
 
 class TrainData():
-
-    def __init__(self, training_set_path: str = INTENTS_FILE_PATH) -> None:
+    
+    def __init__(self) -> None:
 
         self.ignore_words = ['?', '!', '.', ',', ';']
         self.all_words = []
         self.X_y = []
         self.tags = []
+        
 
-        with open(training_set_path, 'r') as file:
-            intents = json.load(file)
+        with open(SQUAD_FILE_PATH, 'r') as file:
+            squad_json = json.load(file)
 
-            for intent in intents[INTENTS]:
-                tag = intent[TAG]
+            squad = Squad(squad_json)
+
+            squad_data_list = squad.data_list
+
+            for squad_data in squad_data_list:
+                tag = squad_data.title
                 self.tags.append(tag)
+                for paragraph in squad_data.paragraphs:
+                    # TODO maybe insert again for better results
+                    # self.tags.append(paragraph.context)
 
-                for pattern in intent[PATTERNS]:
-                    word = tokenize(pattern)
-                    self.all_words.extend(word)
-                    self.X_y.append((word, tag))
+                    for qas in paragraph.question_answer_sets:
+                        question = tokenize(qas.question)
+                        self.all_words.extend(question)
+                        self.X_y.append((question, tag))
 
             self.all_words = [stemming(word) for word in self.all_words if word not in self.ignore_words]
             self.all_words = get_sorted_unique_string_list(self.all_words)
@@ -51,12 +60,10 @@ class TrainData():
                 self.X_train.append(bag)
 
                 label = self.tags.index(tag)
-                self.y_train.append(label) # CrossEntropyLoss
-
+                self.y_train.append(label)
 
             self.X_train = np.array(self.X_train)
             self.y_train = np.array(self.y_train)
-
 
     def get_X_y_train(self):
         return self.X_train, self.y_train
@@ -70,7 +77,6 @@ class ChatDataSet(Dataset):
         self.X_data_ = deepcopy(X_train)
         self.y_data_ = deepcopy(y_train)
 
-
     # dataset[idx]
     def __getitem__(self, index) -> Tuple:
         return self.X_data_[index], self.y_data_[index]
@@ -79,6 +85,7 @@ class ChatDataSet(Dataset):
     def __len__(self) -> int:
         return self.n_samples
 
+            
 
 
 def main():
@@ -93,6 +100,7 @@ def main():
     num_epoch = 1000
 
     X_train, y_train= train_data.get_X_y_train()
+
     dataset = ChatDataSet(X_train, y_train)
 
     train_loader = DataLoader(dataset=dataset, 
@@ -107,6 +115,8 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+    print('Start training')
+    
     # training loop
     for epoch in range(num_epoch):
         for (words, labels) in train_loader:

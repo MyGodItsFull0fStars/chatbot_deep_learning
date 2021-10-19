@@ -2,9 +2,10 @@
 
 import json
 from typing import Any, Dict, List, Tuple
-from copy import copy, deepcopy
+from copy import deepcopy
 
 from torch.utils import data
+from utils import *
 
 QUESTION_KEY: str = 'question'
 ANSWERS_KEY: str = 'answers'
@@ -50,21 +51,25 @@ DATA_KEY: str = 'data'
 
 class Squad():
     # The Stanford Question Answering Dataset 2.0
-    def __init__(self, data_list: list) -> None:
-        self.data_list: List[Squad_Data] = [Squad_Data(data) for data in data_list]
+    def __init__(self, json_file) -> None:
+        self.version: str = json_file['version']
+        self.data_list: List[Squad_Data] = [Squad_Data(data) for data in json_file['data']]
 
     def __getitem__(self, index) -> Squad_Data:
         squad_data = deepcopy(self.data_list[index])
         return squad_data
 
-with open('squad_dataset.json', 'r') as file:
-    training_questions = json.load(file)
-    
-    # x = json.loads(json.dumps(training_questions), object_hook=lambda d: SimpleNamespace(**d))
+# with open('squad_dataset.json', 'r') as file:
+#     training_questions = json.load(file)
 
-    data = training_questions['data']
-    squad = Squad(data)
+#     squad = Squad(training_questions)
 
-    for para in squad.data_list[0].paragraphs:
-        print(para.context)
+#     for para in squad[0].paragraphs[:1]:
+#         # print(para.context)
+#         word_list = [stemming(word) for word in para.context.split(' ')]
+#         word_list = get_sorted_unique_string_list(word_list)
+#         # word_list = get_sorted_unique_string_list(tokenize(para.context))
+#         # word_list = [stemming(word) for word in word_list]
+#         print(word_list)
+
  
