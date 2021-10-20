@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
-from model import NeuralNetSmall
+from model import NeuralNetGrande, NeuralNetMedium, NeuralNetSmall
 
 import numpy as np
 
@@ -22,7 +22,7 @@ from constants import *
 
 import os.path as path
 
-SQUAD_FILE_PATH: str = 'squad_dataset.json'
+SQUAD_FILE_PATH: str = "squad_dataset.json"
 
 all_words = get_all_words()
 tags = get_tags()
@@ -30,9 +30,9 @@ tags = get_tags()
 
 class TrainData:
     def __init__(self, from_range: int = None, to_range: int = None) -> None:
-        print('init TrainData')
+        print("init TrainData")
 
-        self.ignore_words = ['?', '!', '.', ',', ';']
+        self.ignore_words = ["?", "!", ".", ",", ";"]
         self.all_words = all_words
         self.X_y = []
         self.tags = tags
@@ -41,19 +41,18 @@ class TrainData:
 
         self.from_range = from_range if from_range is not None else 0
 
-        with open(SQUAD_FILE_PATH, 'r') as file:
+        with open(SQUAD_FILE_PATH, "r") as file:
             squad_json = json.load(file)
             squad = Squad(squad_json)
 
-            self.to_range = to_range if to_range is not None else len(
-                squad.data_list)
+            self.to_range = to_range if to_range is not None else len(squad.data_list)
 
             self.init_X_y_set(squad)
             self.create_bag_of_words()
 
     def init_X_y_set(self, squad: Squad) -> None:
-        print('init X_y set')
-        for squad_data in squad.data_list[self.from_range: self.to_range]:
+        print("init X_y set")
+        for squad_data in squad.data_list[self.from_range : self.to_range]:
             tag = squad_data.title
 
             for paragraph in squad_data.paragraphs:
@@ -63,7 +62,7 @@ class TrainData:
                     self.X_y.append((question, tag))
 
     def create_bag_of_words(self):
-        print('create bag of words')
+        print("create bag of words")
         all_words_dict = get_all_words_dict(self.all_words)
 
         for (pattern_sentence, tag) in self.X_y:
@@ -98,58 +97,73 @@ class ChatDataSet(Dataset):
 
 
 def main():
-    file_name: str = 'test_train.pth'
+    file_name: str = "test_train.pth"
 
     # Hyperparameters
-    batch_size: int = 32
+    batch_size: int = 16
     input_size = len(all_words)
-    hidden_size = len(all_words)
     output_size = len(tags)
 
-    learning_rate = 0.001
-    num_epoch = 1000
-    num_workers = 5
+    # hidden_size = int(np.mean([input_size, output_size])) // 30
+    hidden_size = int(output_size * 1.2)
 
+    learning_rate = 0.001
+    num_epoch = 5
+    num_workers = 12
+
+    # amount of maximum data sets available
     max_data_set = 442
-    data_set_to_range = 442
-    step = 2
+    data_set_to_range = max_data_set
+    step = 10
 
     device = get_training_device()
-    
+
     model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
     # if a pretrained model exists, the weights get loaded into the model
     model_data = load_model(file_name)
     if model_data is not None:
         model.load_state_dict(model_data[MODEL_STATE])
 
-    for from_range in range(0, data_set_to_range, step):
-        to_range = from_range + step if from_range + \
-            step <= data_set_to_range else data_set_to_range
+    for epoch in range(num_epoch):
 
-        train_data = TrainData(from_range, to_range)
-        X_train, y_train = train_data.get_X_y_train()
-        dataset = ChatDataSet(X_train, y_train)
+        for from_range in range(0, data_set_to_range, step):
+            to_range = (
+                from_range + step
+                if from_range + step <= data_set_to_range
+                else data_set_to_range
+            )
 
-        train_loader = DataLoader(
-            dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers
-        )
+            print(f"epoch: {epoch} -- range: [{from_range}--{to_range}]")
 
-        # loss and optimizer
-        criterion = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+            train_data = TrainData(from_range, to_range)
+            X_train, y_train = train_data.get_X_y_train()
+            dataset = ChatDataSet(X_train, y_train)
 
-        training_loop(num_epoch, train_loader, model, criterion, optimizer)
+            train_loader = DataLoader(
+                dataset=dataset,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=num_workers,
+            )
 
-    data = get_model_data(model, input_size, output_size,
-                              hidden_size, all_words, tags)
+            # loss and optimizer
+            criterion = nn.CrossEntropyLoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+            loss = training_loop(1, train_loader, model, criterion, optimizer)
+
+        print(f"\nepoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}\n")
+
+    data = get_model_data(model, input_size, output_size, hidden_size, all_words, tags)
     save_model(data, file_name)
 
 
 def training_loop(num_epoch: int, train_loader, model, criterion, optimizer):
-    print('Start training')
+    print("Start training")
     device = get_training_device()
 
-    for epoch in range(num_epoch):
+    for _ in range(num_epoch):
+        count = 0
         for (words, labels) in train_loader:
             words = words.to(device)
             labels = labels.to(dtype=torch.long).to(device)
@@ -165,23 +179,27 @@ def training_loop(num_epoch: int, train_loader, model, criterion, optimizer):
             loss.backward()
             optimizer.step()
 
-        if (epoch + 1) % 10 == 0:
-            print(f'epoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}')
+            print(f"current count: {count}")
+            count += 1
+
+    return loss
 
 
-def save_model(data: dict, file_name: str = 'data.pth'):
+def save_model(data: dict, file_name: str = "data.pth"):
     torch.save(data, file_name)
-    print(f'training complete. file saved to {file_name}')
+    print(f"training complete. file saved to {file_name}")
 
 
-def load_model(file_name: str = 'data.pth'):
+def load_model(file_name: str = "data.pth"):
     if path.exists(file_name):
         return torch.load(file_name)
     else:
         return None
 
 
-def get_model_data(model, input_size, output_size, hidden_size, all_words, tags) -> dict:
+def get_model_data(
+    model, input_size, output_size, hidden_size, all_words, tags
+) -> dict:
     data = {
         MODEL_STATE: model.state_dict(),
         INPUT_SIZE: input_size,
@@ -193,5 +211,5 @@ def get_model_data(model, input_size, output_size, hidden_size, all_words, tags)
     return data
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
