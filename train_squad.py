@@ -1,6 +1,7 @@
 # dataset source: https://rajpurkar.github.io/SQuAD-explorer/
 import json
 from typing import List, Tuple
+from torch._C import device
 
 from torch.utils import data
 from utils import (
@@ -16,7 +17,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, dataset
 
-from model import NeuralNet
+from model import NeuralNetSmall
 
 import numpy as np
 
@@ -41,7 +42,7 @@ class TrainData:
 
             squad = Squad(squad_json)
 
-            for squad_data in squad.data_list:
+            for squad_data in squad.data_list[:1]:
                 tag = squad_data.title
                 for paragraph in squad_data.paragraphs:
                     # TODO maybe insert again for better results
@@ -59,7 +60,10 @@ class TrainData:
         all_words_dict = self.get_all_words_dict(self.all_words)
 
         for (pattern_sentence, tag) in self.X_y:
+
+            
             bag = bag_of_words(pattern_sentence, all_words_dict)
+
             self.X_train.append(bag)
 
             label = self.tags.index(tag)
@@ -131,15 +135,24 @@ def main():
     )
 
     device = get_training_device()
-    model = NeuralNet(input_size, hidden_size, output_size).to(device)
+    model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
 
     # loss and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    print('Start training')
+    training_loop(num_epoch, train_loader, model, criterion, optimizer)
 
-    # training loop
+    data = get_model_data(model, input_size, output_size, hidden_size, train_data.all_words, train_data.tags)
+
+    save_model(data)
+
+
+
+def training_loop(num_epoch: int, train_loader, model, criterion, optimizer):
+    print('Start training')
+    device = get_training_device()
+
     for epoch in range(num_epoch):
         for (words, labels) in train_loader:
             words = words.to(device)
@@ -156,26 +169,25 @@ def main():
             loss.backward()
             optimizer.step()
 
-        if (epoch + 1) % 100 == 0:
+        if (epoch + 1) % 10 == 0:
             print(f'epoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}')
 
-    print(f'final loss={loss.item():4f}')
+def save_model(data: dict, file_name: str = 'data.pth'):
+    torch.save(data, file_name)
+    print(f'training complete. file saved to {file_name}')
 
+
+def get_model_data(model, input_size, output_size, hidden_size, all_words, tags) -> dict:
     data = {
         MODEL_STATE: model.state_dict(),
         INPUT_SIZE: input_size,
         OUTPUT_SIZE: output_size,
         HIDDEN_SIZE: hidden_size,
-        ALL_WORDS: train_data.all_words,
-        TAGS: train_data.tags,
+        ALL_WORDS: all_words,
+        TAGS: tags,
     }
-
-    file_name = 'data.pth'
-    torch.save(data, file_name)
-
-    print(f'training complete. file saved to {file_name}')
-
+    return data
 
 if __name__ == '__main__':
-    # main()
-    train = TrainData()
+    main()
+    # train = TrainData()
