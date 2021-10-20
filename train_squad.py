@@ -112,7 +112,7 @@ def main():
 
     max_data_set = 442
     data_set_to_range = 442
-    step = 4
+    step = 2
 
     device = get_training_device()
     
@@ -125,8 +125,6 @@ def main():
     for from_range in range(0, data_set_to_range, step):
         to_range = from_range + step if from_range + \
             step <= data_set_to_range else data_set_to_range
-
-
 
         train_data = TrainData(from_range, to_range)
         X_train, y_train = train_data.get_X_y_train()
