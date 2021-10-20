@@ -1,21 +1,17 @@
 # dataset source: https://rajpurkar.github.io/SQuAD-explorer/
 import json
 from typing import List, Tuple
-from torch._C import device
 
-from torch.utils import data
 from utils import (
     tokenize,
-    stemming,
     bag_of_words,
-    get_sorted_unique_string_list,
     get_training_device,
 )
 from copy import deepcopy
 
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader, dataset
+from torch.utils.data import Dataset, DataLoader
 
 from model import NeuralNetSmall
 
@@ -24,44 +20,54 @@ import numpy as np
 from squad import *
 from constants import *
 
+import os.path as path
+
 SQUAD_FILE_PATH: str = 'squad_dataset.json'
+
+all_words = get_all_words()
+tags = get_tags()
 
 
 class TrainData:
-    def __init__(self) -> None:
+    def __init__(self, from_range: int = None, to_range: int = None) -> None:
+        print('init TrainData')
 
         self.ignore_words = ['?', '!', '.', ',', ';']
-        self.all_words = self.get_all_words()
+        self.all_words = all_words
         self.X_y = []
-        self.tags = self.get_tags()
+        self.tags = tags
         self.X_train = []
         self.y_train = []
 
+        self.from_range = from_range if from_range is not None else 0
+
         with open(SQUAD_FILE_PATH, 'r') as file:
             squad_json = json.load(file)
-
             squad = Squad(squad_json)
 
-            for squad_data in squad.data_list[:1]:
-                tag = squad_data.title
-                for paragraph in squad_data.paragraphs:
-                    # TODO maybe insert again for better results
-                    # self.tags.append(paragraph.context)
+            self.to_range = to_range if to_range is not None else len(
+                squad.data_list)
 
-                    for qas in paragraph.question_answer_sets:
-                        question = tokenize(qas.question)
-                        self.X_y.append((question, tag))
-
-            
+            self.init_X_y_set(squad)
             self.create_bag_of_words()
 
+    def init_X_y_set(self, squad: Squad) -> None:
+        print('init X_y set')
+        for squad_data in squad.data_list[self.from_range: self.to_range]:
+            tag = squad_data.title
+
+            for paragraph in squad_data.paragraphs:
+
+                for qas in paragraph.question_answer_sets:
+                    question = tokenize(qas.question)
+                    self.X_y.append((question, tag))
 
     def create_bag_of_words(self):
-        all_words_dict = self.get_all_words_dict(self.all_words)
+        print('create bag of words')
+        all_words_dict = get_all_words_dict(self.all_words)
 
         for (pattern_sentence, tag) in self.X_y:
 
-            
             bag = bag_of_words(pattern_sentence, all_words_dict)
 
             self.X_train.append(bag)
@@ -72,32 +78,8 @@ class TrainData:
         self.X_train = np.array(self.X_train)
         self.y_train = np.array(self.y_train)
 
-
     def get_X_y_train(self):
         return self.X_train, self.y_train
-
-
-    def get_all_words_dict(self, all_words) -> Dict[str, int]:
-        all_words_dict = {}
-
-        for idx, word in enumerate(all_words):
-            all_words_dict[word] = idx
-
-        return all_words_dict
-
-    def get_all_words(self) -> List[str]:
-        with open('all_words.txt', 'r') as word_file:
-            word_str = word_file.read()
-            all_words = word_str.split(' ')
-
-            return all_words
-
-    def get_tags(self) -> List[str]:
-        with open('tags.txt', 'r') as tags_file:
-            tags_str = tags_file.read()
-            tags = tags_str.split(' ')
-
-            return tags
 
 
 class ChatDataSet(Dataset):
@@ -116,37 +98,53 @@ class ChatDataSet(Dataset):
 
 
 def main():
-    train_data = TrainData()
+    file_name: str = 'test_train.pth'
 
     # Hyperparameters
     batch_size: int = 32
-    input_size = len(train_data.all_words)
-    hidden_size = 128
-    output_size = len(train_data.tags)
+    input_size = len(all_words)
+    hidden_size = len(all_words)
+    output_size = len(tags)
+
     learning_rate = 0.001
     num_epoch = 1000
+    num_workers = 5
 
-    X_train, y_train = train_data.get_X_y_train()
-
-    dataset = ChatDataSet(X_train, y_train)
-
-    train_loader = DataLoader(
-        dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=5
-    )
+    max_data_set = 442
+    data_set_to_range = 442
+    step = 4
 
     device = get_training_device()
+    
     model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
+    # if a pretrained model exists, the weights get loaded into the model
+    model_data = load_model(file_name)
+    if model_data is not None:
+        model.load_state_dict(model_data[MODEL_STATE])
 
-    # loss and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    for from_range in range(0, data_set_to_range, step):
+        to_range = from_range + step if from_range + \
+            step <= data_set_to_range else data_set_to_range
 
-    training_loop(num_epoch, train_loader, model, criterion, optimizer)
 
-    data = get_model_data(model, input_size, output_size, hidden_size, train_data.all_words, train_data.tags)
 
-    save_model(data)
+        train_data = TrainData(from_range, to_range)
+        X_train, y_train = train_data.get_X_y_train()
+        dataset = ChatDataSet(X_train, y_train)
 
+        train_loader = DataLoader(
+            dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers
+        )
+
+        # loss and optimizer
+        criterion = nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+        training_loop(num_epoch, train_loader, model, criterion, optimizer)
+
+    data = get_model_data(model, input_size, output_size,
+                              hidden_size, all_words, tags)
+    save_model(data, file_name)
 
 
 def training_loop(num_epoch: int, train_loader, model, criterion, optimizer):
@@ -172,9 +170,17 @@ def training_loop(num_epoch: int, train_loader, model, criterion, optimizer):
         if (epoch + 1) % 10 == 0:
             print(f'epoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}')
 
+
 def save_model(data: dict, file_name: str = 'data.pth'):
     torch.save(data, file_name)
     print(f'training complete. file saved to {file_name}')
+
+
+def load_model(file_name: str = 'data.pth'):
+    if path.exists(file_name):
+        return torch.load(file_name)
+    else:
+        return None
 
 
 def get_model_data(model, input_size, output_size, hidden_size, all_words, tags) -> dict:
@@ -188,6 +194,6 @@ def get_model_data(model, input_size, output_size, hidden_size, all_words, tags)
     }
     return data
 
+
 if __name__ == '__main__':
     main()
-    # train = TrainData()
