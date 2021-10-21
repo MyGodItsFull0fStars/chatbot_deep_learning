@@ -1,26 +1,19 @@
 # dataset source: https://rajpurkar.github.io/SQuAD-explorer/
 import json
-from typing import List, Tuple
-
-from utils import (
-    tokenize,
-    bag_of_words,
-    get_training_device,
-)
+import os.path as path
 from copy import deepcopy
-
-import torch
-import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-
-from model import NeuralNetGrande, NeuralNetMedium, NeuralNetSmall
+from typing import Tuple
 
 import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
 
-from squad import *
 from constants import *
-
-import os.path as path
+from model import NeuralNetSmall
+from squad import Squad
+from utils import (bag_of_words, get_training_device, tokenize,
+                   get_all_words, get_tags, get_all_words_dict)
 
 SQUAD_FILE_PATH: str = "squad_dataset.json"
 
@@ -29,10 +22,10 @@ tags = get_tags()
 
 
 class TrainData:
+
     def __init__(self, from_range: int = None, to_range: int = None) -> None:
         print("init TrainData")
 
-        self.ignore_words = ["?", "!", ".", ",", ";"]
         self.all_words = all_words
         self.X_y = []
         self.tags = tags
@@ -45,14 +38,15 @@ class TrainData:
             squad_json = json.load(file)
             squad = Squad(squad_json)
 
-            self.to_range = to_range if to_range is not None else len(squad.data_list)
+            self.to_range = to_range if to_range is not None else len(
+                squad.data_list)
 
             self.init_X_y_set(squad)
             self.create_bag_of_words()
 
     def init_X_y_set(self, squad: Squad) -> None:
         print("init X_y set")
-        for squad_data in squad.data_list[self.from_range : self.to_range]:
+        for squad_data in squad.data_list[self.from_range: self.to_range]:
             tag = squad_data.title
 
             for paragraph in squad_data.paragraphs:
@@ -154,7 +148,8 @@ def main():
 
         print(f"\nepoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}\n")
 
-    data = get_model_data(model, input_size, output_size, hidden_size, all_words, tags)
+    data = get_model_data(model, input_size, output_size, hidden_size)
+    
     save_model(data, file_name)
 
 
@@ -197,9 +192,16 @@ def load_model(file_name: str = "data.pth"):
         return None
 
 
+def get_model_from_torch_file(torch_file)  -> dict:
+    data_dict: dict = {
+        key: torch_file[key] for key in torch_file.keys()
+    }
+
+    return data_dict
+
+
 def get_model_data(
-    model, input_size, output_size, hidden_size, all_words, tags
-) -> dict:
+    model, input_size, output_size, hidden_size) -> dict:
     data = {
         MODEL_STATE: model.state_dict(),
         INPUT_SIZE: input_size,
