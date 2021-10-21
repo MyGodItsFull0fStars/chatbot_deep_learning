@@ -1,7 +1,7 @@
 import random
 import json
 import torch
-from model import NeuralNet
+from model import NeuralNetSmall
 from utils import bag_of_words, tokenize, get_training_device
 
 from constants import *
@@ -58,7 +58,7 @@ with open('intents.json', 'r') as file:
     tags = data[TAGS]
     model_state = data[MODEL_STATE]
 
-    model = NeuralNet(input_size, hidden_size, output_size).to(device)
+    model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
 
     # load the learned parameters
     model.load_state_dict(model_state)
