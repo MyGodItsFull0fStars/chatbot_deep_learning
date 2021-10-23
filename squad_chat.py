@@ -2,12 +2,17 @@ import json
 
 import torch
 
+from copy import copy
+
+from fuzzywuzzy import fuzz
+
 from constants import *
 from model import NeuralNetSmall
+from squad import Question_Answer_Set, Squad, Squad_Transform
 from utils import bag_of_words, get_all_words_dict, get_training_device, tokenize
 
 device = get_training_device()
-bot_name = 'Alan'
+bot_name = 'chattypedia'
 
 
 def bot_answer(answer: str) -> None:
@@ -15,16 +20,18 @@ def bot_answer(answer: str) -> None:
 
 
 def chat_loop(chat_model) -> None:
-    print("Hey lets chat! Type 'quit' to exit")
+    bot_answer("Hey lets chat! Type 'quit' to exit")
 
     while True:
 
         sentence = input('You: ')
 
+
         if sentence == 'quit':
             bot_answer('Goodbye ;)')
             break
 
+        sentence_fuzzy = copy(sentence)
         sentence = tokenize(sentence)
         X = bag_of_words(sentence, all_words_dict)
         # 1 row because we have one sample
@@ -34,24 +41,33 @@ def chat_loop(chat_model) -> None:
 
         output = chat_model(X)
         _, predicted = torch.max(output, dim=1)
-        tag = tags[predicted.item()]
+        title = tags[predicted.item()]
 
         probs = torch.softmax(output, dim=1)
         prob = probs[0][predicted.item()]
 
-        print(prob)
-
         if prob.item() > 0.01:
-            print(intents.keys())
-            for intent in intents[INTENTS]:
-                if tag == intent[TAG]:
-                    bot_answer(intent[0])
+            question_answer_sets = squad_transform.get_question_answer_set(title)
+        
+            best_ratio = 0
+            best_question_answer_set: Question_Answer_Set = None
+
+            for qas in question_answer_sets:
+                current_ratio = fuzz.ratio(sentence_fuzzy, qas.question)
+                if current_ratio > best_ratio:
+                    best_question_answer_set = qas
+                    best_ratio = current_ratio
+
+
+            bot_answer(best_question_answer_set.answer)
+            
         else:
             bot_answer('I do not understand...')
 
 
 with open('squad_dataset.json', 'r') as file:
-    intents = json.load(file)
+    squad_file = json.load(file)
+    squad_transform: Squad_Transform = Squad_Transform(Squad(squad_file))
 
     torch_file_path = 'test_train_5_episodes.pth'
     data = torch.load(torch_file_path)
