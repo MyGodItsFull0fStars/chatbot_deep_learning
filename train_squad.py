@@ -160,6 +160,7 @@ def training_loop(num_epoch: int, train_loader, model, criterion, optimizer):
     for _ in range(num_epoch):
         count = 0
         for (words, labels) in train_loader:
+            # Move tensors to the configured device
             words = words.to(device)
             labels = labels.to(dtype=torch.long).to(device)
 
