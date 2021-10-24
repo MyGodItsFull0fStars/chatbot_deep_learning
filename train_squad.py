@@ -112,15 +112,17 @@ def main():
 
     device = get_training_device()
 
-    model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
     # if a pretrained model exists, the weights get loaded into the model
     model_data = load_model("train_5_episodes_without_hidden.pth")
     if model_data is not None:
         print("pretrained model found")
-        model.load_state_dict(model_data[MODEL_STATE])
         input_size = model_data[INPUT_SIZE]
         output_size = model_data[OUTPUT_SIZE]
         hidden_size = model_data[HIDDEN_SIZE]
+        model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
+        model.load_state_dict(model_data[MODEL_STATE])
+    else:
+        model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
 
     for epoch in range(num_epoch):
 
@@ -132,7 +134,7 @@ def main():
             )
 
             print(
-                f"epoch: {epoch + 17}/{num_epoch} -- range: [{from_range}-{to_range}]"
+                f"epoch: {epoch + 1}/{num_epoch} -- range: [{from_range}-{to_range}]"
             )
 
             train_data = TrainData(from_range, to_range)
@@ -162,7 +164,6 @@ def main():
 def training_loop(train_loader, model, criterion, optimizer):
     device = get_training_device()
 
-    count: int = 0
     for (words, labels) in train_loader:
         # Move tensors to the configured device
         words = words.to(device)
@@ -178,10 +179,6 @@ def training_loop(train_loader, model, criterion, optimizer):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
-        # if count % 50 == 0:
-        #     # print(f"current count: {count} -- current loss: {loss.item()}")
-        # count += 1
 
     return loss
 
