@@ -1,7 +1,5 @@
 import torch.nn as nn
 
-import numpy as np
-
 
 class NeuralNetSmall(nn.Module):
     def __init__(self, input_size: int, hidden_size: int, num_classes: int):
