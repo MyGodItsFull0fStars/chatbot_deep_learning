@@ -12,11 +12,11 @@ from squad import Question_Answer_Set, Squad, Squad_Transform
 from utils import bag_of_words, get_all_words_dict, get_training_device, tokenize
 
 device = get_training_device()
-bot_name = 'chattypedia'
+bot_name = "chattypedia"
 
 
 def bot_answer(answer: str) -> None:
-    print(f'{bot_name}: {answer}')
+    print(f"{bot_name}: {answer}")
 
 
 def chat_loop(chat_model) -> None:
@@ -24,11 +24,10 @@ def chat_loop(chat_model) -> None:
 
     while True:
 
-        sentence = input('You: ')
+        sentence = input("You: ")
 
-
-        if sentence == 'quit':
-            bot_answer('Goodbye ;)')
+        if sentence == "quit":
+            bot_answer("Goodbye ;)")
             break
 
         sentence_fuzzy = copy(sentence)
@@ -47,8 +46,9 @@ def chat_loop(chat_model) -> None:
         prob = probs[0][predicted.item()]
 
         if prob.item() > 0.01:
+            print(f"title: {title}")
             question_answer_sets = squad_transform.get_question_answer_set(title)
-        
+
             best_ratio = 0
             best_question_answer_set: Question_Answer_Set = None
 
@@ -58,18 +58,18 @@ def chat_loop(chat_model) -> None:
                     best_question_answer_set = qas
                     best_ratio = current_ratio
 
-
+            print(f"question: {best_question_answer_set.question}")
             bot_answer(best_question_answer_set.answer)
-            
+
         else:
-            bot_answer('I do not understand...')
+            bot_answer("I do not understand...")
 
 
-with open('squad_dataset.json', 'r') as file:
+with open("squad_dataset.json", "r") as file:
     squad_file = json.load(file)
     squad_transform: Squad_Transform = Squad_Transform(Squad(squad_file))
 
-    torch_file_path = 'test_train_5_episodes.pth'
+    torch_file_path = "squad_train_100_episodes.pth"
     data = torch.load(torch_file_path)
 
     input_size = data[INPUT_SIZE]
