@@ -8,3 +8,7 @@ OUTPUT_SIZE: str = 'output_size'
 HIDDEN_SIZE: str = 'hidden_size'
 ALL_WORDS: str = 'all_words'
 RESPONSES: str = 'responses'
+
+MODEL_NAME: str = 'model_name'
+ACCURACY_KEY: str = 'accuracy'
+LOSS_KEY: str = 'loss'
