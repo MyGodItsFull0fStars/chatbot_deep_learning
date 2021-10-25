@@ -2,7 +2,7 @@
 import json
 import os.path as path
 from copy import deepcopy
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -42,13 +42,14 @@ class TrainData:
             squad_json = json.load(file)
             squad = Squad(squad_json)
 
-            self.to_range = to_range if to_range is not None else len(squad.data_list)
+            self.to_range = to_range if to_range is not None else len(
+                squad.data_list)
 
             self.init_X_y_set(squad)
             self.create_bag_of_words()
 
     def init_X_y_set(self, squad: Squad) -> None:
-        for squad_data in squad.data_list[self.from_range : self.to_range]:
+        for squad_data in squad.data_list[self.from_range: self.to_range]:
             tag = squad_data.title
 
             for paragraph in squad_data.paragraphs:
@@ -90,7 +91,8 @@ class ChatDataSet(Dataset):
 
 
 def main():
-    file_name: str = "test_train.pth"
+    file_path_load: str = "test_train.pth"
+    file_path_store: str = "test_train.pth"
 
     # Hyperparameters
     batch_size: int = 16
@@ -113,7 +115,7 @@ def main():
     device = get_training_device()
 
     # if a pretrained model exists, the weights get loaded into the model
-    model_data = load_model("train_5_episodes_without_hidden.pth")
+    model_data = load_model(file_path_load)
     if model_data is not None:
         print("pretrained model found")
         input_size = model_data[INPUT_SIZE]
@@ -155,10 +157,12 @@ def main():
             loss = training_loop(train_loader, model, criterion, optimizer)
 
         print(f"\nepoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}\n")
+        data = get_model_data(model, input_size, output_size, hidden_size)
+        save_model(data, f'models_1.2_hl/test_train_1.2_epoch_{epoch + 1}.pth')
 
-    data = get_model_data(model, input_size, output_size, hidden_size)
+    # data = get_model_data(model, input_size, output_size, hidden_size)
 
-    save_model(data, "train_5_episodes_without_hidden.pth")
+    # save_model(data, file_path_store)
 
 
 def training_loop(train_loader, model, criterion, optimizer):
