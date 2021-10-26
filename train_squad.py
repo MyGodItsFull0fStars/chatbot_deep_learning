@@ -97,21 +97,21 @@ def main():
     torch_file_path_load: str = 'test_train.pth'
 
     # Hyperparameters
-    batch_size: int = 64
+    batch_size: int = 128
     input_size = len(all_words)
     output_size = len(tags)
 
     # hidden_size = int(np.mean([input_size, output_size])) // 30
     hidden_size = int(output_size * 1.5)
 
-    learning_rate = 0.005
+    learning_rate = 0.001
     num_epoch = 100
     num_workers = 12
 
     # amount of maximum data sets available
     max_data_set = 442
     data_set_to_range = max_data_set
-    step = 10
+    step = 20
 
     device = get_training_device()
 
@@ -128,26 +128,28 @@ def main():
         model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
 
     # prepare json file
-    json_dir_name: str = 'models_1.5_hl'
+    dir_name: str = 'models_1.5_hl'
     json_file_name: str = 'accuracy_loss_data.json'
     json_model_name: str = f'NeuralNetSmall(input:{input_size}, hidden:{hidden_size}, output:{output_size})'
 
     json_utils.init_accuracy_loss_json_file(
-        json_model_name, json_dir_name, json_file_name
+        json_model_name, dir_name, json_file_name
     )
     loss_list: List[Tuple[str, float]] = []
 
+    print('start training')
     for epoch in range(num_epoch):
+        # loss and optimizer
+        criterion = nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
         current_epoch_average_loss: List[float] = []
+
         for from_range in range(0, data_set_to_range, step):
             to_range = (
                 from_range + step
                 if from_range + step <= data_set_to_range
                 else data_set_to_range
             )
-
-            print(
-                f'epoch: {epoch + 1}/{num_epoch} -- range: [{from_range}-{to_range}]')
 
             train_data = TrainData(from_range, to_range)
             X_train, y_train = train_data.get_X_y_train()
@@ -160,10 +162,6 @@ def main():
                 num_workers=num_workers,
             )
 
-            # loss and optimizer
-            criterion = nn.CrossEntropyLoss()
-            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
             loss = training_loop(train_loader, model, criterion, optimizer)
             current_epoch_average_loss.append(loss.item())
 
@@ -175,9 +173,9 @@ def main():
         data = get_model_data(model, input_size, output_size,
                               hidden_size, all_words, tags)
         save_model(
-            data, f'models_1.2_hl/small_model_hidden_1.5_of_output_epoch_{epoch + 1}.pth')
+            data, f'{dir_name}/small_model_hidden_1.5_of_output_epoch_{epoch + 1}.pth')
 
-    json_utils.update_loss(json_dir_name, json_file_name, loss_list)
+    json_utils.update_loss(dir_name, json_file_name, loss_list)
 
     # data = get_model_data(model, input_size, output_size, hidden_size)
 
