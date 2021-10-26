@@ -1,18 +1,17 @@
 # source of dataset: https://rajpurkar.github.io/SQuAD-explorer/
 
-import json
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 from copy import deepcopy
 
-from torch.utils import data
 from utils import *
 
 QUESTION_KEY: str = 'question'
 ANSWERS_KEY: str = 'answers'
 PLAUSIBLE_ANSWERS_KEY: str = 'plausible_answers'
 
+
 class Question_Answer_Set():
-    
+
     def __init__(self, qas_entry) -> None:
 
         self.question: str = qas_entry['question']
@@ -34,8 +33,11 @@ class Question_Answer_Set():
         # retrieve answer
         return answer['text']
 
+
 CONTEXT_KEY: str = 'context'
 QUESTION_ANSWER_SET_KEY: str = 'qas'
+
+
 class Squad_Paragraph():
 
     def __init__(self, paragraph_entry) -> None:
@@ -46,11 +48,14 @@ class Squad_Paragraph():
 
 TITLE_KEY: str = 'title'
 PARAGRAPHS_KEY: str = 'paragraphs'
+
+
 class Squad_Data():
 
     def __init__(self, entry) -> None:
         self.title: str = entry[TITLE_KEY]
-        self.paragraphs: List[Squad_Paragraph] = [Squad_Paragraph(data) for data in entry[PARAGRAPHS_KEY]]
+        self.paragraphs: List[Squad_Paragraph] = [
+            Squad_Paragraph(data) for data in entry[PARAGRAPHS_KEY]]
 
     def __getitem__(self, index) -> Squad_Paragraph:
         paragraph = deepcopy(self.paragraphs[index])
@@ -60,20 +65,24 @@ class Squad_Data():
 VERSION_KEY: str = 'version'
 DATA_KEY: str = 'data'
 
+
 class Squad():
     # The Stanford Question Answering Dataset 2.0
     def __init__(self, json_file) -> None:
         self.version: str = json_file['version']
-        self.data_list: List[Squad_Data] = [Squad_Data(data) for data in json_file['data']]
+        self.data_list: List[Squad_Data] = [
+            Squad_Data(data) for data in json_file['data']]
 
     def __getitem__(self, index) -> Squad_Data:
         squad_data = deepcopy(self.data_list[index])
         return squad_data
 
+
 class Squad_Transform():
 
     def __init__(self, squad: Squad) -> None:
-        self.title_question_answer_dict = self.transform_to_title_question_answer_structure(squad)
+        self.title_question_answer_dict = self.transform_to_title_question_answer_structure(
+            squad)
 
     def get_question_answer_set(self, question: str) -> List[Question_Answer_Set]:
         if question in self.title_question_answer_dict.keys():
@@ -84,7 +93,7 @@ class Squad_Transform():
     def transform_to_title_question_answer_structure(self, squad: Squad) -> Dict[str, List[Question_Answer_Set]]:
         "Dict -> {title: Question Answer Set}"
         title_qas_dict: Dict[str, Question_Answer_Set] = {}
-        
+
         for squad_paragraphs in squad:
             title = squad_paragraphs.title
             for paragraph in squad_paragraphs:
@@ -104,5 +113,3 @@ class Squad_Transform():
 #         # word_list = get_sorted_unique_string_list(tokenize(para.context))
 #         # word_list = [stemming(word) for word in word_list]
 #         print(word_list)
-
- 

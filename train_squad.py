@@ -10,7 +10,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
 from constants import *
-from model import NeuralNetSmall
+from model import NeuralNetSmall, save_model, load_model, get_model_from_torch_file, get_model_data
 from squad import Squad
 from utils import (
     bag_of_words,
@@ -157,7 +157,7 @@ def main():
             loss = training_loop(train_loader, model, criterion, optimizer)
 
         print(f"\nepoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}\n")
-        data = get_model_data(model, input_size, output_size, hidden_size)
+        data = get_model_data(model, input_size, output_size, hidden_size, all_words, tags)
         save_model(data, f'models_1.2_hl/test_train_1.2_epoch_{epoch + 1}.pth')
 
     # data = get_model_data(model, input_size, output_size, hidden_size)
@@ -187,34 +187,7 @@ def training_loop(train_loader, model, criterion, optimizer):
     return loss
 
 
-def save_model(data: dict, file_name: str = "data.pth"):
-    torch.save(data, file_name)
-    print(f"training complete. file saved to {file_name}")
 
-
-def load_model(file_name: str = "data.pth"):
-    if path.exists(file_name):
-        return torch.load(file_name)
-    else:
-        return None
-
-
-def get_model_from_torch_file(torch_file) -> dict:
-    data_dict: dict = {key: torch_file[key] for key in torch_file.keys()}
-
-    return data_dict
-
-
-def get_model_data(model, input_size, output_size, hidden_size) -> dict:
-    data = {
-        MODEL_STATE: model.state_dict(),
-        INPUT_SIZE: input_size,
-        OUTPUT_SIZE: output_size,
-        HIDDEN_SIZE: hidden_size,
-        ALL_WORDS: all_words,
-        TAGS: tags,
-    }
-    return data
 
 
 if __name__ == "__main__":
