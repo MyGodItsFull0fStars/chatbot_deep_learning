@@ -1,16 +1,16 @@
 # dataset source: https://rajpurkar.github.io/SQuAD-explorer/
 import json
-import os.path as path
 from copy import deepcopy
 from typing import List, Tuple
 
 import numpy as np
 import torch
+from torch.jit import Error
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
 from constants import *
-from model import NeuralNetSmall, save_model, load_model, get_model_from_torch_file, get_model_data
+from model import NeuralNetSmall, save_model, load_model, get_model_data
 from squad import Squad
 from utils import (
     bag_of_words,
@@ -19,7 +19,10 @@ from utils import (
     get_all_words,
     get_tags,
     get_all_words_dict,
+    get_average
 )
+
+import json_utils
 
 SQUAD_FILE_PATH: str = "squad_dataset.json"
 
@@ -91,11 +94,11 @@ class ChatDataSet(Dataset):
 
 
 def main():
-    file_path_load: str = "test_train.pth"
-    file_path_store: str = "test_train.pth"
+    torch_file_path_load: str = "test_train.pth"
+    torch_file_path_store: str = "test_train.pth"
 
     # Hyperparameters
-    batch_size: int = 16
+    batch_size: int = 64
     input_size = len(all_words)
     output_size = len(tags)
 
@@ -115,7 +118,7 @@ def main():
     device = get_training_device()
 
     # if a pretrained model exists, the weights get loaded into the model
-    model_data = load_model(file_path_load)
+    model_data = load_model(torch_file_path_load)
     if model_data is not None:
         print("pretrained model found")
         input_size = model_data[INPUT_SIZE]
@@ -126,8 +129,17 @@ def main():
     else:
         model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
 
-    for epoch in range(num_epoch):
+    # prepare json file
+    json_dir_name: str = 'models_1.2_hl'
+    json_file_name: str = 'accuracy_loss_data.json'
+    json_model_name: str = f'NeuralNetSmall({input_size}, {hidden_size}, {output_size})'
 
+    json_utils.init_accuracy_loss_json_file(
+        json_model_name, json_dir_name, json_file_name)
+    loss_list: List[Tuple[str, float]] = []
+
+    for epoch in range(num_epoch):
+        current_epoch_average_loss: List[float] = []
         for from_range in range(0, data_set_to_range, step):
             to_range = (
                 from_range + step
@@ -155,10 +167,18 @@ def main():
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
             loss = training_loop(train_loader, model, criterion, optimizer)
+            current_epoch_average_loss.append(loss.item())
 
         print(f"\nepoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}\n")
-        data = get_model_data(model, input_size, output_size, hidden_size, all_words, tags)
+
+        average_loss = get_average(current_epoch_average_loss)
+        loss_list.append((f'average_loss_epoch_{epoch + 1}', average_loss))
+        loss_list.append((f'loss_epoch_{epoch + 1}', loss.item()))
+        data = get_model_data(model, input_size, output_size,
+                              hidden_size, all_words, tags)
         save_model(data, f'models_1.2_hl/test_train_1.2_epoch_{epoch + 1}.pth')
+
+    json_utils.update_loss(json_dir_name, json_file_name, loss_list)
 
     # data = get_model_data(model, input_size, output_size, hidden_size)
 
@@ -185,9 +205,6 @@ def training_loop(train_loader, model, criterion, optimizer):
         optimizer.step()
 
     return loss
-
-
-
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 import json
+from os import mkdir, path
 from typing import Any, Dict, List, Tuple
-from constants import MODEL_NAME, ACCURACY_KEY, LOSS_KEY
-from os import path, mkdir, rmdir
+
+from constants import ACCURACY_KEY, LOSS_KEY, MODEL_NAME
 
 
 def init_accuracy_loss_json_file(model_name: str, dir_name: str, file_name: str) -> bool:
@@ -17,18 +18,17 @@ def init_accuracy_loss_json_file(model_name: str, dir_name: str, file_name: str)
     return False
 
 
-def get_values_from_json(dir_name: str, file_name: str) -> Tuple[str, List[float], List[float]]:
+def get_values_from_json(dir_name: str, file_name: str) -> Tuple[str, List[str, float], List[str, float]]:
     file_path = _prepare_json_file_path(dir_name, file_name)
     with open(file_path, 'r') as json_file:
         data = json.load(json_file)
         if MODEL_NAME in data and ACCURACY_KEY in data and LOSS_KEY in data:
             return data[MODEL_NAME], data[ACCURACY_KEY], data[LOSS_KEY]
-        else:
-            raise ValueError(
-                'The loaded json file is not in the required form')
+        raise ValueError(
+            'The loaded json file is not in the required form')
 
 
-def update_accuracy_loss_json_file(dir_name: str, file_name: str, accuracy: List[float], loss: List[float]):
+def update_accuracy_loss_json_file(dir_name: str, file_name: str, accuracy: List[str, float], loss: List[str, float]):
     model_name, json_accuracy, json_loss = get_values_from_json(
         dir_name, file_name)
     # insert new values after the last position of the pre-existing json values
@@ -41,7 +41,7 @@ def update_accuracy_loss_json_file(dir_name: str, file_name: str, accuracy: List
     _write_json_dict_to_file(dir_name, file_name, new_json_dict)
 
 
-def update_accuracy(dir_name: str, file_name: str, accuracy: List[float]):
+def update_accuracy(dir_name: str, file_name: str, accuracy: List[str, float]):
     model_name, json_file_accuracy, json_file_loss = get_values_from_json(
         dir_name, file_name)
     json_file_accuracy.extend(accuracy)
@@ -52,7 +52,7 @@ def update_accuracy(dir_name: str, file_name: str, accuracy: List[float]):
     _write_json_dict_to_file(dir_name, file_name, new_json_dict)
 
 
-def update_loss(dir_name: str, file_name: str, loss: List[float]):
+def update_loss(dir_name: str, file_name: str, loss: List[str, float]):
     model_name, json_file_accuracy, json_file_loss = get_values_from_json(
         dir_name, file_name)
     json_file_loss.extend(loss)
@@ -63,7 +63,7 @@ def update_loss(dir_name: str, file_name: str, loss: List[float]):
     _write_json_dict_to_file(dir_name, file_name, new_json_dict)
 
 
-def _create_json_dictionary(model_name: str, accuracy: List[float] = None, loss: List[float] = None) -> Dict[str, Any]:
+def _create_json_dictionary(model_name: str, accuracy: List[str, float] = None, loss: List[str, float] = None) -> Dict[str, Any]:
     dictionary = {
         MODEL_NAME: model_name,
         ACCURACY_KEY: accuracy if accuracy is not None else [],
@@ -84,6 +84,9 @@ def _prepare_json_file_path(dir_name: str, file_name: str) -> str:
         raise ValueError('file_name has to be set')
 
     _make_dir_if_not_exist(dir_name)
+
+    if dir_name.endswith('/'):
+        dir_name = dir_name.removesuffix('/')
 
     file_path: str = file_name if dir_name is None else f'{dir_name}/{file_name}'
 

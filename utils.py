@@ -3,6 +3,7 @@ from typing import Dict, List
 import nltk
 import numpy as np
 import torch
+from functools import reduce
 
 # nltk.download('punkt')
 from nltk.stem.porter import PorterStemmer
@@ -33,6 +34,9 @@ def bag_of_words(tokenized_sentence, all_words_dict: dict) -> List[str]:
             bag[idx] = 1
 
     return bag
+
+def get_average(data: list) -> float:
+    return reduce(lambda a, b: a + b, data) / len(data)
 
 
 def get_training_device():
