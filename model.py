@@ -87,13 +87,6 @@ def save_model(data: dict, file_name: str = "data.pth"):
     print(f"training complete. file saved to {file_name}")
 
 
-def load_model(file_name: str = "data.pth"):
-    if path.exists(file_name):
-        return torch.load(file_name)
-    else:
-        return None
-
-
 def get_model_from_torch_file(torch_file) -> dict:
     data_dict: dict = {key: torch_file[key] for key in torch_file.keys()}
 
