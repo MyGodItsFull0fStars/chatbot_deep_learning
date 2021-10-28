@@ -1,98 +1,17 @@
 # dataset source: https://rajpurkar.github.io/SQuAD-explorer/
-import json
 from copy import deepcopy
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
-import numpy as np
 import torch
-from torch.jit import Error
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
-
-from constants import *
-from model import NeuralNetSmall, save_model, load_model, get_model_data
-from squad import Squad
-from utils import (
-    bag_of_words,
-    get_training_device,
-    tokenize,
-    get_all_words,
-    get_tags,
-    get_all_words_dict,
-    get_average,
-)
-
-from model_utils import get_data_loader
 
 import json_utils
+from constants import *
+from model import NeuralNetSmall, get_model_data, save_model
+from model_utils import get_data_loader, load_model
+from utils import get_average, get_training_device
 
 SQUAD_FILE_PATH: str = 'squad_dataset.json'
-
-all_words = get_all_words()
-tags = get_tags()
-all_words_dict = get_all_words_dict(all_words)
-
-
-class TrainData:
-    def __init__(self, from_range: int = None, to_range: int = None) -> None:
-        self.all_words = all_words
-        self.X_y = []
-        self.tags = tags
-        self.X_train = []
-        self.y_train = []
-
-        self.from_range = from_range if from_range is not None else 0
-
-        with open(SQUAD_FILE_PATH, 'r') as file:
-            squad_json = json.load(file)
-            squad = Squad(squad_json)
-
-            self.to_range = to_range if to_range is not None else len(
-                squad.data_list)
-
-            self.init_X_y_set(squad)
-            self.create_bag_of_words()
-
-    def init_X_y_set(self, squad: Squad) -> None:
-        for squad_data in squad.data_list[self.from_range: self.to_range]:
-            tag = squad_data.title
-
-            for paragraph in squad_data.paragraphs:
-
-                for qas in paragraph.question_answer_sets:
-                    question = tokenize(qas.question)
-                    self.X_y.append((question, tag))
-
-    def create_bag_of_words(self):
-        for (pattern_sentence, tag) in self.X_y:
-
-            bag = bag_of_words(pattern_sentence, all_words_dict)
-
-            self.X_train.append(bag)
-
-            label = self.tags.index(tag)
-            self.y_train.append(label)
-
-        self.X_train = np.array(self.X_train)
-        self.y_train = np.array(self.y_train)
-
-    def get_X_y_train(self):
-        return self.X_train, self.y_train
-
-
-class ChatDataSet(Dataset):
-    def __init__(self, X_train, y_train) -> None:
-        super().__init__()
-        self.n_samples = len(X_train)
-        self.X_data_ = deepcopy(X_train)
-        self.y_data_ = deepcopy(y_train)
-
-    # dataset[idx]
-    def __getitem__(self, index) -> Tuple:
-        return self.X_data_[index], self.y_data_[index]
-
-    def __len__(self) -> int:
-        return self.n_samples
 
 
 def main():
@@ -141,29 +60,14 @@ def main():
     print('start training')
     for epoch in range(num_epoch):
         # loss and optimizer
-        criterion = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        criterion, optimizer = get_criterion_and_optimizer(
+            model, learning_rate)
         current_epoch_average_loss: List[float] = []
 
         for from_range in range(0, max_data_set, step):
-            # to_range = (
-            #     from_range + step
-            #     if from_range + step <= max_data_set
-            #     else max_data_set
-            # )
 
-            # train_data = TrainData(from_range, to_range)
-            # X_train, y_train = train_data.get_X_y_train()
-            # dataset = ChatDataSet(X_train, y_train)
-
-            # train_loader = DataLoader(
-            #     dataset=dataset,
-            #     batch_size=batch_size,
-            #     shuffle=True,
-            #     num_workers=num_workers,
-            # )
-
-            train_loader = get_data_loader(from_range, from_range + step, batch_size, num_workers)
+            train_loader = get_data_loader(
+                from_range, from_range + step, batch_size, num_workers)
 
             loss = training_loop(train_loader, model, criterion, optimizer)
             current_epoch_average_loss.append(loss.item())
@@ -180,9 +84,14 @@ def main():
 
     json_utils.update_loss(dir_name, json_file_name, loss_list)
 
-    # data = get_model_data(model, input_size, output_size, hidden_size)
+    print('done')
 
-    # save_model(data, file_path_store)
+
+def get_criterion_and_optimizer(model: nn.Module, learning_rate: float):
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    return criterion, optimizer
 
 
 def training_loop(train_loader, model, criterion, optimizer):
