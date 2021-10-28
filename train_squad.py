@@ -22,6 +22,8 @@ from utils import (
     get_average,
 )
 
+from model_utils import get_data_loader
+
 import json_utils
 
 SQUAD_FILE_PATH: str = 'squad_dataset.json'
@@ -110,7 +112,6 @@ def main():
 
     # amount of maximum data sets available
     max_data_set = 442
-    data_set_to_range = max_data_set
     step = 20
 
     device = get_training_device()
@@ -144,23 +145,25 @@ def main():
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
         current_epoch_average_loss: List[float] = []
 
-        for from_range in range(0, data_set_to_range, step):
-            to_range = (
-                from_range + step
-                if from_range + step <= data_set_to_range
-                else data_set_to_range
-            )
+        for from_range in range(0, max_data_set, step):
+            # to_range = (
+            #     from_range + step
+            #     if from_range + step <= max_data_set
+            #     else max_data_set
+            # )
 
-            train_data = TrainData(from_range, to_range)
-            X_train, y_train = train_data.get_X_y_train()
-            dataset = ChatDataSet(X_train, y_train)
+            # train_data = TrainData(from_range, to_range)
+            # X_train, y_train = train_data.get_X_y_train()
+            # dataset = ChatDataSet(X_train, y_train)
 
-            train_loader = DataLoader(
-                dataset=dataset,
-                batch_size=batch_size,
-                shuffle=True,
-                num_workers=num_workers,
-            )
+            # train_loader = DataLoader(
+            #     dataset=dataset,
+            #     batch_size=batch_size,
+            #     shuffle=True,
+            #     num_workers=num_workers,
+            # )
+
+            train_loader = get_data_loader(from_range, from_range + step, batch_size, num_workers)
 
             loss = training_loop(train_loader, model, criterion, optimizer)
             current_epoch_average_loss.append(loss.item())
