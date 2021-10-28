@@ -19,7 +19,8 @@ from_range: int = 0
 to_range: int = 44
 batch_size: int = 128
 num_workers: int = 10
-train_loader: DataLoader = (from_range, to_range, batch_size, num_workers)
+train_loader: DataLoader = model_utils.get_data_loader(
+    from_range, to_range, batch_size, num_workers)
 
 
 def threader():
@@ -45,14 +46,22 @@ def get_model_list_file_names(dir_name: str) -> List[str]:
 
 def __calculate_accuracy(dir_name: str, model_file_name: str) -> None:
 
-    model_name: str = model_file_name.removesuffix('.pth')
+    model_name: str = __get_model_name_from_file_name(model_file_name)
     print(f'calculate accuracy for model: {model_name}')
-    model = model_utils.get_model(dir_name, model_file_name)
+    model = model_utils.get_model_from_torch_file(
+        f'{dir_name}/{model_file_name}')
     accuracy, _, _ = model_utils.get_accuracy(train_loader, model)
 
     lock.acquire()
     accuracy_list.append((model_name, accuracy))
     lock.release()
+
+
+def __get_model_name_from_file_name(model_file_name: str) -> str:
+    model_name: str = model_file_name.removesuffix('.pth')
+    start_index = model_name.index('epoch')
+
+    return model_name[start_index:]
 
 
 def __init_threads(num_of_threads: int, model_list: List[str]):
