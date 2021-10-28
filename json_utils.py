@@ -20,7 +20,7 @@ def init_accuracy_loss_json_file(model_name: str, dir_name: str, file_name: str 
     return False
 
 
-def get_values_from_json(dir_name: str, file_name: str = DEFAULT_FILE_NAME) -> Tuple[str, List[str, float], List[str, float]]:
+def get_values_from_json(dir_name: str, file_name: str = DEFAULT_FILE_NAME) -> Tuple[str, List[Tuple[str, float]], List[Tuple[str, float]]]:
     file_path = _prepare_json_file_path(dir_name, file_name)
     with open(file_path, 'r') as json_file:
         data = json.load(json_file)
@@ -30,7 +30,7 @@ def get_values_from_json(dir_name: str, file_name: str = DEFAULT_FILE_NAME) -> T
             'The loaded json file is not in the required form')
 
 
-def update_accuracy_loss_json_file(dir_name: str, file_name: str, accuracy: List[str, float], loss: List[str, float]):
+def update_accuracy_loss_json_file(dir_name: str, file_name: str, accuracy: List[Tuple[str, float]], loss: List[Tuple[str, float]]):
     model_name, json_accuracy, json_loss = get_values_from_json(
         dir_name, file_name)
     # insert new values after the last position of the pre-existing json values
@@ -43,8 +43,9 @@ def update_accuracy_loss_json_file(dir_name: str, file_name: str, accuracy: List
     _write_json_dict_to_file(dir_name, file_name, new_json_dict)
 
 
-def update_accuracy(dir_name: str, file_name: str = DEFAULT_FILE_NAME, accuracy: List[str, float] = None):
-    model_name, json_file_accuracy, json_file_loss = get_values_from_json(dir_name, file_name)
+def update_accuracy(dir_name: str, file_name: str = DEFAULT_FILE_NAME, accuracy: List[Tuple[str, float]] = None):
+    model_name, json_file_accuracy, json_file_loss = get_values_from_json(
+        dir_name, file_name)
 
     if accuracy is not None:
         json_file_accuracy.extend(accuracy)
@@ -55,7 +56,7 @@ def update_accuracy(dir_name: str, file_name: str = DEFAULT_FILE_NAME, accuracy:
     _write_json_dict_to_file(dir_name, file_name, new_json_dict)
 
 
-def update_loss(dir_name: str, file_name: str, loss: List[str, float]):
+def update_loss(dir_name: str, file_name: str, loss: List[Tuple[str, float]]):
     model_name, json_file_accuracy, json_file_loss = get_values_from_json(
         dir_name, file_name)
     json_file_loss.extend(loss)
@@ -66,7 +67,7 @@ def update_loss(dir_name: str, file_name: str, loss: List[str, float]):
     _write_json_dict_to_file(dir_name, file_name, new_json_dict)
 
 
-def _create_json_dictionary(model_name: str, accuracy: List[str, float] = None, loss: List[str, float] = None) -> Dict[str, Any]:
+def _create_json_dictionary(model_name: str, accuracy: List[Tuple[str, float]] = None, loss: List[Tuple[str, float]] = None) -> Dict[str, Any]:
     dictionary = {
         MODEL_NAME: model_name,
         ACCURACY_KEY: accuracy if accuracy is not None else [],
