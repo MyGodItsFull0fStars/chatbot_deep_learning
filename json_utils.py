@@ -4,8 +4,10 @@ from typing import Any, Dict, List, Tuple
 
 from constants import ACCURACY_KEY, LOSS_KEY, MODEL_NAME
 
+DEFAULT_FILE_NAME: str = 'accuracy_loss_data.json'
 
-def init_accuracy_loss_json_file(model_name: str, dir_name: str, file_name: str) -> bool:
+
+def init_accuracy_loss_json_file(model_name: str, dir_name: str, file_name: str = DEFAULT_FILE_NAME) -> bool:
     dictionary = _create_json_dictionary(model_name)
     file_path = _prepare_json_file_path(dir_name, file_name)
 
@@ -18,7 +20,7 @@ def init_accuracy_loss_json_file(model_name: str, dir_name: str, file_name: str)
     return False
 
 
-def get_values_from_json(dir_name: str, file_name: str) -> Tuple[str, List[str, float], List[str, float]]:
+def get_values_from_json(dir_name: str, file_name: str = DEFAULT_FILE_NAME) -> Tuple[str, List[str, float], List[str, float]]:
     file_path = _prepare_json_file_path(dir_name, file_name)
     with open(file_path, 'r') as json_file:
         data = json.load(json_file)
@@ -41,10 +43,11 @@ def update_accuracy_loss_json_file(dir_name: str, file_name: str, accuracy: List
     _write_json_dict_to_file(dir_name, file_name, new_json_dict)
 
 
-def update_accuracy(dir_name: str, file_name: str, accuracy: List[str, float]):
-    model_name, json_file_accuracy, json_file_loss = get_values_from_json(
-        dir_name, file_name)
-    json_file_accuracy.extend(accuracy)
+def update_accuracy(dir_name: str, file_name: str = DEFAULT_FILE_NAME, accuracy: List[str, float] = None):
+    model_name, json_file_accuracy, json_file_loss = get_values_from_json(dir_name, file_name)
+
+    if accuracy is not None:
+        json_file_accuracy.extend(accuracy)
 
     new_json_dict = _create_json_dictionary(
         model_name, json_file_accuracy, json_file_loss)
