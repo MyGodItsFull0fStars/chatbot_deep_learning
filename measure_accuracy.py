@@ -8,10 +8,13 @@ from torch.utils.data.dataloader import DataLoader
 import json_utils
 import model_utils
 
-lock = threading.Lock()
+import sys
+
+# lock = threading.Lock()
+thread_list: List[threading.Thread] = []
 queue = Queue()
 
-directory_name: str = 'models_1.5_hl'
+directory_name: str = 'models_1_hl'
 
 accuracy_list: List[Tuple[str, float]] = []
 
@@ -52,35 +55,39 @@ def __calculate_accuracy(dir_name: str, model_file_name: str) -> None:
         f'{dir_name}/{model_file_name}')
     accuracy, _, _ = model_utils.get_accuracy(train_loader, model)
 
-    lock.acquire()
     accuracy_list.append((model_name, accuracy))
-    lock.release()
 
 
 def __get_model_name_from_file_name(model_file_name: str) -> str:
     model_name: str = model_file_name.removesuffix('.pth')
     start_index = model_name.index('epoch')
 
-    return model_name[start_index:]
+    return 'accuracy_' + model_name[start_index:]
 
 
-def __init_threads(num_of_threads: int, model_list: List[str]):
+def __init_threads(num_of_threads: int):
     # starting a number of threads for the operations
     for _ in range(num_of_threads):
         thread = threading.Thread(target=threader)
         thread.daemon = True
+        thread_list.append(thread)
         thread.start()
 
+
+def __stop_threads():
+    for thread in thread_list:
+        thread.join()
+
+
+def __start_calculating(model_list: List[str]):
     for model_name in model_list:
         queue.put(model_name)
-
-    queue.join()
 
 
 def main():
 
     model_list = get_model_list_file_names(directory_name)
-    max_thread_number: int = 5
+    max_thread_number: int = 6
 
     if len(model_list) == 0:
         raise ValueError('Model list is empty')
@@ -88,12 +95,18 @@ def main():
     num_of_threads: int = max_thread_number if len(
         model_list) > max_thread_number else len(model_list)
 
-    __init_threads(num_of_threads, model_list)
+    __init_threads(num_of_threads)
+
+    __start_calculating(model_list)
+
+    print('join threads')
+    queue.join()
 
     json_utils.update_accuracy(
         directory_name, json_utils.DEFAULT_FILE_NAME, accuracy_list)
 
     print('done')
+    sys.exit()
 
 
 if __name__ == '__main__':
