@@ -103,3 +103,40 @@ def _prepare_json_file_path(dir_name: str, file_name: str) -> str:
 def _make_dir_if_not_exist(dir_name: str) -> str:
     if dir_name is not None and not path.exists(dir_name):
         mkdir(dir_name)
+
+
+class AccuracyLossData():
+
+    def __init__(self, dir_name: str) -> None:
+        self.dir_name: str = dir_name
+        self.file_path: str = self.__create_file_path(dir_name)
+        self.model_name: str = None
+        self.accuracies: Dict[str, float] = {}
+        self.losses: Dict[str, float] = {}
+        self.average_losses: Dict[str, float] = {}
+
+        self.__init_json_member_variables()
+
+    def __init_json_member_variables(self):
+        with open(self.file_path, 'r') as json_file:
+            json_data = json.load(json_file)
+
+            self.model_name = json_data['model_name']
+            self.__init_accuracies(json_data)
+            self.__init_losses(json_data)
+
+    def __init_accuracies(self, json_data):
+        for accuracy in json_data['accuracy']:
+            self.accuracies[accuracy[0]] = accuracy[1]
+
+    def __init_losses(self, json_data):
+        for loss in json_data['loss']:
+            if 'average' in loss[0]:
+                self.average_losses[loss[0]] = loss[1]
+            else:
+                self.losses[loss[0]] = loss[1]
+
+    def __create_file_path(self, dir_name: str, file_name: str = DEFAULT_FILE_NAME) -> str:
+        if dir_name.endswith('/'):
+            return f'{dir_name}{file_name}'
+        return f'{dir_name}/{file_name}'
