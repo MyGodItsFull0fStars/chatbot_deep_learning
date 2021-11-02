@@ -1,15 +1,21 @@
 # dataset source: https://rajpurkar.github.io/SQuAD-explorer/
-from copy import deepcopy
 from typing import List, Tuple
 
 import torch
 import torch.nn as nn
+import wandb
 
 import json_utils
 from constants import *
 from model import NeuralNetSmall, get_model_data, save_model
 from model_utils import get_data_loader, load_model
-from utils import get_average, get_training_device
+from utils import get_training_device
+
+wandb.config = {
+    "learning_rate": 0.001,
+    "epochs": 100,
+    "batch_size": 128
+}
 
 SQUAD_FILE_PATH: str = 'squad_dataset.json'
 
@@ -74,9 +80,11 @@ def main():
 
         print(f'\nepoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}\n')
 
-        loss_list.append(
-            (f'average_loss_epoch_{epoch + 1}', get_average(current_epoch_average_loss)))
         loss_list.append((f'loss_epoch_{epoch + 1}', loss.item()))
+
+        wandb.log({'loss': loss})
+        wandb.watch(model)
+
         data = get_model_data(model, input_size, output_size,
                               hidden_size, all_words, tags)
         save_model(
