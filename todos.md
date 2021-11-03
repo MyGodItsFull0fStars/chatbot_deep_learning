@@ -7,7 +7,6 @@
 - How balanced is the dataset -> are there an equal amount of question-answer-sets for every title?
 - Clustering the question-answer-sets for each title
 
-
 ## Implementation
 
 - Make a model to predict the correct answer for the questions, for this X is the question and y is the answer.
@@ -16,4 +15,4 @@
 
 ## Other
 
-- Look into further methods to analyze the model/data with help of the course
+- Look into further methods to analyze the model/data with help of the course (like Covariance etc.)
