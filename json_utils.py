@@ -113,14 +113,12 @@ class AccuracyLossData():
         self.model_name: str = None
         self.accuracies: Dict[str, float] = {}
         self.losses: Dict[str, float] = {}
-        self.average_losses: Dict[str, float] = {}
 
         self.__init_json_member_variables()
 
     def __init_json_member_variables(self):
         with open(self.file_path, 'r') as json_file:
             json_data = json.load(json_file)
-
             self.model_name = json_data['model_name']
             self.__init_accuracies(json_data)
             self.__init_losses(json_data)
@@ -131,12 +129,11 @@ class AccuracyLossData():
 
     def __init_losses(self, json_data):
         for loss in json_data['loss']:
-            if 'average' in loss[0]:
-                self.average_losses[loss[0]] = loss[1]
-            else:
-                self.losses[loss[0]] = loss[1]
+            self.losses[loss[0]] = loss[1]
 
     def __create_file_path(self, dir_name: str, file_name: str = DEFAULT_FILE_NAME) -> str:
+        if file_name is None:
+            raise ValueError('file_name must not be None')
         if dir_name is None:
             return file_name
         if dir_name.endswith('/'):
