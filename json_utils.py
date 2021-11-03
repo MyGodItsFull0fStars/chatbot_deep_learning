@@ -56,7 +56,7 @@ def update_accuracy(dir_name: str, file_name: str = DEFAULT_FILE_NAME, accuracy:
     _write_json_dict_to_file(dir_name, file_name, new_json_dict)
 
 
-def update_loss(dir_name: str, file_name: str, loss: List[Tuple[str, float]]):
+def update_loss(dir_name: str = None, file_name: str = DEFAULT_FILE_NAME, loss: List[Tuple[str, float]] = []):
     model_name, json_file_accuracy, json_file_loss = get_values_from_json(
         dir_name, file_name)
     json_file_loss.extend(loss)
@@ -89,7 +89,7 @@ def _prepare_json_file_path(dir_name: str, file_name: str) -> str:
 
     _make_dir_if_not_exist(dir_name)
 
-    if dir_name.endswith('/'):
+    if dir_name is not None and dir_name.endswith('/'):
         dir_name = dir_name.removesuffix('/')
 
     file_path: str = file_name if dir_name is None else f'{dir_name}/{file_name}'
@@ -137,6 +137,8 @@ class AccuracyLossData():
                 self.losses[loss[0]] = loss[1]
 
     def __create_file_path(self, dir_name: str, file_name: str = DEFAULT_FILE_NAME) -> str:
+        if dir_name is None:
+            return file_name
         if dir_name.endswith('/'):
             return f'{dir_name}{file_name}'
         return f'{dir_name}/{file_name}'
