@@ -43,8 +43,11 @@ def get_training_device():
     return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def get_all_words_dict(all_words) -> Dict[str, int]:
-    all_words_dict = {}
+def get_all_words_dict(all_words: List[str] = None) -> Dict[str, int]:
+    if all_words is None:
+        all_words = get_all_words()
+
+    all_words_dict: Dict[str, int] = {}
 
     for idx, word in enumerate(all_words):
         all_words_dict[word] = idx
