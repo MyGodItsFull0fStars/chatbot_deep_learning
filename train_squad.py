@@ -77,7 +77,7 @@ def main():
             loss = training_loop(train_loader, model, criterion, optimizer)
             current_epoch_average_loss.append(loss.item())
             print(
-                f'from_range: {from_range} to_range: {from_range + step} loss: {loss}')
+                f'from_range: {from_range} to_range: {from_range + step} current_loss: {loss}')
 
         print(f'\nepoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}\n')
 
