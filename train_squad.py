@@ -17,8 +17,6 @@ wandb.config = {
     "batch_size": 128
 }
 
-SQUAD_FILE_PATH: str = 'squad_dataset.json'
-
 
 def main():
     torch_file_path_load: str = 'test_train.pth'
@@ -33,7 +31,7 @@ def main():
 
     learning_rate = 0.001
     num_epoch = 100
-    num_workers = 12
+    num_workers = 1
 
     # amount of maximum data sets available
     max_data_set = 442
@@ -65,6 +63,7 @@ def main():
 
     print('start training')
     for epoch in range(num_epoch):
+        print(f'epoch: {epoch + 1}')
         # loss and optimizer
         criterion, optimizer = get_criterion_and_optimizer(
             model, learning_rate)
@@ -77,6 +76,8 @@ def main():
 
             loss = training_loop(train_loader, model, criterion, optimizer)
             current_epoch_average_loss.append(loss.item())
+            print(
+                f'from_range: {from_range} to_range: {from_range + step} loss: {loss}')
 
         print(f'\nepoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}\n')
 
