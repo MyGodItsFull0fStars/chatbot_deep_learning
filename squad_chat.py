@@ -47,7 +47,7 @@ def chat_loop(chat_model) -> None:
 
         if prob.item() > 0.01:
             print(f"title: {title}")
-            question_answer_sets = squad_transform.get_question_answer_set(title)
+            question_answer_sets = squad_transform.get_question_answer_set_by_question(title)
 
             best_ratio = 0
             best_question_answer_set: Question_Answer_Set = None
