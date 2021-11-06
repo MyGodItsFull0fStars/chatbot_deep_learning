@@ -31,15 +31,13 @@ class TrainData:
 
         self.from_range = from_range if from_range is not None else 0
 
-        with open(SQUAD_FILE_PATH, 'r') as file:
-            squad_json = json.load(file)
-            squad = Squad(squad_json)
+        squad = Squad(SQUAD_FILE_PATH)
 
-            self.to_range = to_range if to_range is not None else len(
-                squad.data_list)
+        self.to_range = to_range if to_range is not None else len(
+            squad.data_list)
 
-            self.init_X_y_set(squad)
-            self.create_bag_of_words()
+        self.init_X_y_set(squad)
+        self.create_bag_of_words()
 
     def init_X_y_set(self, squad: Squad) -> None:
         for squad_data in squad.data_list[self.from_range: self.to_range]:
