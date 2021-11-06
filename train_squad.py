@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 import torch
 import torch.nn as nn
+import numpy as np
 import wandb
 
 import json_utils
@@ -27,7 +28,7 @@ def main():
     input_size = len(all_words)
     output_size = len(tags)
 
-    # hidden_size = int(np.mean([input_size, output_size])) // 30
+    # hidden_size = int(np.mean([input_size, output_size]))
     hidden_size = int(output_size * 1.5)
 
     learning_rate = 0.001
