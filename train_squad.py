@@ -6,7 +6,8 @@ import torch.nn as nn
 import wandb
 
 import json_utils
-from constants import *
+from constants import (HIDDEN_SIZE, INPUT_SIZE, MODEL_STATE, OUTPUT_SIZE,
+                       all_words, tags)
 from model import NeuralNetSmall, get_model_data, save_model
 from model_utils import get_data_loader, load_model
 from utils import get_training_device
