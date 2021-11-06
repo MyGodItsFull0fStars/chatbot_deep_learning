@@ -1,7 +1,8 @@
 # source of dataset: https://rajpurkar.github.io/SQuAD-explorer/
 
-from typing import Any, Dict, List
+import json
 from copy import deepcopy
+from typing import Any, Dict, List
 
 from utils import *
 
@@ -15,8 +16,8 @@ class Question_Answer_Set():
     def __init__(self, qas_entry) -> None:
 
         self.question: str = qas_entry['question']
-        self.is_impossible: bool = qas_entry['is_impossible']
         # if it is impossible to verify, the answers are considered as plausible answers
+        self.is_impossible: bool = qas_entry['is_impossible']
         self.answer: str = self.__get_answer(qas_entry)
 
     @classmethod
@@ -68,7 +69,9 @@ DATA_KEY: str = 'data'
 
 class Squad():
     # The Stanford Question Answering Dataset 2.0
-    def __init__(self, json_file) -> None:
+    def __init__(self, json_file_path: str = 'squad_dataset.json') -> None:
+
+        json_file = self.__get_json_file(json_file_path)
         self.version: str = json_file['version']
         self.data_list: List[Squad_Data] = [
             Squad_Data(data) for data in json_file['data']]
@@ -77,20 +80,25 @@ class Squad():
         squad_data = deepcopy(self.data_list[index])
         return squad_data
 
+    def __get_json_file(self, json_file_path: str) -> Any:
+        with open(json_file_path, 'r') as read_file:
+            json_file = json.load(read_file)
+            return json_file
+
 
 class Squad_Transform():
 
     def __init__(self, squad: Squad) -> None:
-        self.title_question_answer_dict = self.transform_to_title_question_answer_structure(
+        self.title_question_answer_dict = self.__transform_to_title_question_answer_structure(
             squad)
 
-    def get_question_answer_set(self, question: str) -> List[Question_Answer_Set]:
+    def get_question_answer_set_by_question(self, question: str) -> List[Question_Answer_Set]:
         if question in self.title_question_answer_dict.keys():
             return self.title_question_answer_dict[question]
         else:
             return None
 
-    def transform_to_title_question_answer_structure(self, squad: Squad) -> Dict[str, List[Question_Answer_Set]]:
+    def __transform_to_title_question_answer_structure(self, squad: Squad) -> Dict[str, List[Question_Answer_Set]]:
         "Dict -> {title: Question Answer Set}"
         title_qas_dict: Dict[str, Question_Answer_Set] = {}
 
@@ -100,16 +108,3 @@ class Squad_Transform():
                 title_qas_dict[title] = paragraph.question_answer_sets
 
         return title_qas_dict
-
-# with open('squad_dataset.json', 'r') as file:
-#     training_questions = json.load(file)
-
-#     squad = Squad(training_questions)
-
-#     for para in squad[0].paragraphs[:1]:
-#         # print(para.context)
-#         word_list = [stemming(word) for word in para.context.split(' ')]
-#         word_list = get_sorted_unique_string_list(word_list)
-#         # word_list = get_sorted_unique_string_list(tokenize(para.context))
-#         # word_list = [stemming(word) for word in word_list]
-#         print(word_list)
