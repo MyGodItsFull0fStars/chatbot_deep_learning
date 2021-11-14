@@ -16,8 +16,11 @@
 
 \section{Introduction}
 \label{sec:introduction}
+    NLP is a hard task for computers and writing a chatbot that "understands" user input, meaning providing a satisfactory answer is a challenging task.
     For the project, a chatbot will be implemented, which should be able to answer questions from the \emph{Stanford Question Answering Dataset} (short= \emph{SQuAD})\footnote{SQuAD source: \url{https://rajpurkar.github.io/SQuAD-explorer}}.
     This dataset was extracted by volunteers with over 500 Wikipedia articles. 
+    Each of these articles is considered a title in the dataset and each holds numerous \emph{question-answer-sets (=QAS)}.
+    This SQuAD-dataset will be the source for the training dataset used to train the machine learning models.
     
 
 \section{Motivation}
@@ -38,10 +41,10 @@
     \subsection{Training Experience}
     \label{subsec:-the-learning-task---training-experience}
     % Training experience (where is your training experience coming from? why do you think that your data can actually be used to solve the problem?)
-        The training experience is provided by the University of Stanford in form of question-answer-sets.
+        The training experience is provided by the University of Stanford in form of QAS.
         The vast amount of set elements, stated to be over 100.000+ elements of over 500 articles should (presumably) allow the chatbot to cover many topics.
 
-        The question-answer-sets were provided by volunteers and consist of general questions and answers, as well as unanswerable questions.
+        The QAS were provided by volunteers and consist of general questions and answers, as well as unanswerable questions.
         This is due to the fact, that these unanswerable questions are nonsensical.
         For example the question "What category of game is Legend of Zelda: Australia Twilight?" is nonsensical because no such game exists.
         One subtask of this project might be to look into ways to handle this unanswerable questions, by either ignoring them entirely, or finding ways to handle them, like apply an "unanswerable" label to them.
@@ -51,11 +54,11 @@
     \subsection{Learning task}
     \label{subsec:-the-learning-task---learning-task}
     % Learning task (what are you going to do?)
-        For the learning task, NLP techniques such as \emph{tokenization, bag of words} and \emph{stemming} will be used to pre-process the question-answer-sets.
+        For the learning task, NLP techniques such as \emph{tokenization, bag of words} and \emph{stemming} will be used to pre-process the QAS.
         To process this data, the \emph{Natural Language Toolkit (NLTK)} Python plugin will be used to manipulate the data accordingly.
 
-        The dataset itself is stored as a \emph{JSON}-file with a deep structure, that needs to be queried to provide all question-answer-sets.
-        From all question-answer-sets the questions will be extracted for the training part.
+        The dataset itself is stored as a \emph{JSON}-file with a deep structure, that needs to be queried to provide all QAS.
+        From all QAS the questions will be extracted for the training part.
         The aforementioned NLP-techniques will be used to process the questions in a manner that they can be used as the input signal for the machine learning model.
 
         After the processing of the questions, these will be stored with the corresponding title as the independent-dependent value tuple in a \emph{data loader}.
@@ -83,13 +86,37 @@
 
         \begin{tcolorbox}
             \textbf{False Positive}
-            \textit{If the model provides an answer to an unanswerable question this will be considered a}
+            \textit{If the model provides an answer (that is not the label unanswerable) to an unanswerable question, this will be considered a}
             $$\text{False Positive} = F^+.$$
         \end{tcolorbox}
 
         \begin{tcolorbox}
-            \textbf{Precision}
-            \textit{The precision metric is used to show how precise/accurate the machine learning model. 
+            \textbf{True Negative}
+            \textit{If the model classifies a question as unanswerable, and it is indeed an element of the unanswerable set, it is considered a}
+            $$\text{True Negative} = T^-.$$
+        \end{tcolorbox}
+
+        \begin{tcolorbox}
+            \textbf{False Negative}
+            \textit{If the model classifies a question as unanswerable, but this question is not an element of the unanswerable set, it is considered a}
+            $$\text{False Negative} = F^-.$$
+        \end{tcolorbox}
+
+        \begin{tcolorbox}
+            \textbf{Accuracy \cite{googleClassificationAccuracy}}
+            \textit{Accuracy is an evaluation metric for classification models. "Informally, accuracy is the fraction of predictions our model got right. \cite{googleClassificationAccuracy}"}
+
+            $$\text{Accuracy} = \frac{T^+ + T^-}{T^+ + T^- + F^+ + F^-} = \frac{\text{Number of correct predictions}}{\text{Total number of predictions}}$$
+
+            Given that numerous unanswerable questions are part of the provided dataset, the accuracy metric might result in a "false sense of confidence" for the machine learning model since accuracy does not take falsely classified questions as much into account as precision does.
+        \end{tcolorbox}
+
+        
+        % https://builtin.com/data-science/precision-and-recall
+
+        \begin{tcolorbox}
+            \textbf{Precision \cite{koehrsenPrecisionRecall}}
+            \textit{The precision metric is used to show how precise the machine learning model. 
                 This is done by calculating how many of the predicted positive values are actually positive values.
             }
 
@@ -98,7 +125,7 @@
         \end{tcolorbox}
         
             Precision is a good measure if the cost of a $F^+$ is high. In the case of the \emph{SQuAD}-dataset providing an answer to either an unanswerable question or the wrong answer is considered a $F^+$.
-            Since both scenarios of a $F^+$ are undesirable and therefore, the precision should be aimed as high as possible, this performance measure will also be the main metric in determining the success rate of a trained model.
+            Since both scenarios of $F^+$ are undesirable and therefore, the precision should be aimed as high as possible, this performance measure will also be the main metric in determining the success rate of a trained model.
 
 
         \begin{tcolorbox}
@@ -136,12 +163,15 @@
         These values will be stored in a \emph{data loader}, which will be used to train the machine learning model.
 
         For the training of the machine learning model, the values of the \emph{data loader} will be accessed iteratively and feed into the model.
+
+        After each training, the machine learning model will be used to calculate the performance measures and these values will be stored locally as well as uploaded to \emph{wandb}.
         
-        Given the huge amount of question-answer-sets, and transforming each of them into a \emph{bag of words}, it might be necessary to only partially load the data into a \emph{train loader} to be able to train a machine learning model with it on limited hardware resources and once done, load the next sequence into a \emph{train loader}.
+        Given the huge amount of QAS, and transforming each of them into a \emph{bag of words}, it might be necessary to only partially load the data into a \emph{train loader} to be able to train a machine learning model with it on limited hardware resources and once done, load the next sequence into a \emph{train loader}.
 
 
 \section{Related Work}
 \label{sec:related-work}
+% Related work (provide a summary of at least one paper on scholar.google.com, blog, article, etc. that considers a problem similar to yours. how can you apply the suggested approach to solve your problem? what modifications might be required? can you use the suggested approach as a baseline in your evaluation?)
     
         \paragraph{Contextual Chatbots with Tensorflow \cite{chatbottensorflow}}
         \label{par:-contextual-chatbot-tensorflow}
@@ -175,18 +205,19 @@
  
         
 
-
-
 \section{Risk Management}
 \label{sec:risk-management}
-    Placeholder
+% Risk management (what is your "plan B" in case something goes not as expected, e.g., no data, bad-quality data, non-converging ML algorithms, etc.)
+% Submit your proposals as a document or a presentation to Moodle. Please contact me if you have any doubts regarding your proposal before the deadline!
 
+    If the chatbot project deems to be unreasonably complicated or outputs nonsense answers, an image classification project using \emph{Convolutional Neural Networks} will be used instead. 
+    Multiple online sources \cite{rosebrockPytorchFirstCNN} \cite{rosebrockPytorchWithPretrainedModel} \cite{pytorchCNNTrainingAClassifier} are available that describe the problem and some solutions in detail, and therefore, should be feasible to achieve good results.
+    
+    For this, the package \texttt{torchvision} will be heavily used in this case.
+    The necessary GPU power is available in form of an \emph{NVIDIA GeForce 1080TI}.
 
-%  \begin{enumerate}
-%    \item \input{problem_1}
-%    % add more problem files here
-
-%  \end{enumerate}
+    The mentioned \nameref{subsec:-the-learning-task---performance-measure} will be used for this alternative option as well.
+    
 
 \pagebreak
 
