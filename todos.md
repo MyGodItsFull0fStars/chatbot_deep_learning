@@ -2,7 +2,8 @@
 
 ## Data Analysis
 
-- Occurrence of each word in all words (tokenized)
+- Average word length
+- Minimum/maximum word length
 - how often does a letter occur in the questions and answers
 - How balanced is the dataset -> are there an equal amount of question-answer-sets for every title?
 - Clustering the question-answer-sets for each title
@@ -16,3 +17,4 @@
 ## Other
 
 - Look into further methods to analyze the model/data with help of the course (like Covariance etc.)
+- Further improve logging of wandb
