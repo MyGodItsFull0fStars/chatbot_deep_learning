@@ -81,17 +81,20 @@ class ChatDataSet(Dataset):
         return self.n_samples
 
 
-def get_accuracy(train_loader: DataLoader, model: Module) -> Tuple[int, int]:
-    "This function retuns a tuple with the accuracy of the model and the correct and total labels"
+def get_accuracy(data_loader: DataLoader, model: Module) -> Tuple[float, int, int]:
+    """This function returns a tuple with the accuracy of the model and the correct and total labels
+
+    Accuracy = Number of correct predictions / Total number of predictions
+    """
     # disables gradient calculations
-    if train_loader is None or model is None:
+    if data_loader is None or model is None:
         raise ValueError('invalid parameters')
 
     with torch.no_grad():
         correct = 0
         total = 0
 
-        for words, labels in train_loader:
+        for words, labels in data_loader:
             words = words.to(device)
             labels = labels.to(dtype=torch.long).to(device)
 
@@ -103,6 +106,79 @@ def get_accuracy(train_loader: DataLoader, model: Module) -> Tuple[int, int]:
             correct += (predicted == labels).sum().item()
 
     return (correct/total, correct, total)
+
+
+def get_precision(data_loader: DataLoader, model: Module) -> Tuple[float, float, float]:
+    """This function returns a tuple with the precision of the model and the true positives and total predicted positives
+
+    Precision = True Positives / Total Predicted Positives
+    """
+    if data_loader is None or model is None:
+        raise ValueError('invalid parameters')
+
+    with torch.no_grad():
+        true_positives: torch.Tensor = None
+        false_positives: torch.Tensor = None
+        precision: float = None
+
+        for words, labels in data_loader:
+            words = words.to(device)
+            labels = labels.to(dtype=torch.long).to(device)
+
+            outputs = model(words)
+
+            _, predicted = torch.max(outputs.data, 1)
+
+            true_positives = get_true_positives(labels, predicted)
+            false_positives = get_false_positives(labels, predicted)
+            total_predicted_positives = true_positives + false_positives
+
+            precision = true_positives / total_predicted_positives
+
+    return precision, true_positives, total_predicted_positives
+
+
+def get_recall(data_loader: DataLoader, model: Module) -> Tuple[float, float, float]:
+    if data_loader is None or model is None:
+        raise ValueError('invalid parameters')
+
+    with torch.no_grad():
+        true_positives: torch.Tensor = None
+        false_negative: torch.Tensor = None
+        recall: float = None
+
+        for words, labels in data_loader:
+            words = words.to(device)
+            labels = labels.to(dtype=torch.long).to(device)
+
+            outputs = model(words)
+
+            _, predicted = torch.max(outputs.data, 1)
+
+            true_positives = get_true_positives(labels, predicted)
+            false_negative = get_false_negatives(labels, predicted)
+            denominator = true_positives + false_negative
+
+            recall = true_positives / denominator
+
+    return recall, true_positives, denominator
+
+# used as source: https://gist.github.com/SuperShinyEyes/dcc68a08ff8b615442e3bc6a9b55a354
+
+def get_true_positives(y_true: torch.Tensor, y_predictions: torch.Tensor) -> torch.Tensor:
+    return (y_true * y_predictions).sum().to(torch.float32)
+
+
+def get_false_positives(y_true: torch.Tensor, y_predictions: torch.Tensor) -> torch.Tensor:
+    return ((1 - y_true) * y_predictions).sum().to(torch.float32)
+
+
+def get_true_negatives(y_true: torch.Tensor, y_predictions: torch.Tensor) -> torch.Tensor:
+    return ((1 - y_true) * (1 - y_predictions)).sum().to(torch.float32)
+
+
+def get_false_negatives(y_true: torch.Tensor, y_predictions: torch.Tensor) -> torch.Tensor:
+    return (y_true * (1 - y_predictions)).sum().to(torch.float32)
 
 
 def get_model(dir_name: str, model_file_name: str) -> Module:

@@ -2,6 +2,7 @@
 from typing import List, Tuple
 
 import torch
+from torch._C import get_device
 import torch.nn as nn
 import numpy as np
 import wandb
@@ -13,14 +14,10 @@ from model import NeuralNetSmall, get_model_data, save_model
 from model_utils import get_data_loader, load_model
 from utils import get_training_device
 
-wandb.config = {
-    "learning_rate": 0.001,
-    "epochs": 100,
-    "batch_size": 128
-}
-
 
 def main():
+    wandb.init()
+
     torch_file_path_load: str = 'test_train.pth'
 
     # Hyperparameters
@@ -41,22 +38,25 @@ def main():
 
     device = get_training_device()
 
-    # if a pretrained model exists, the weights get loaded into the model
-    model_data = load_model(torch_file_path_load)
-    if model_data is not None:
-        print('pretrained model found')
-        input_size = model_data[INPUT_SIZE]
-        output_size = model_data[OUTPUT_SIZE]
-        hidden_size = model_data[HIDDEN_SIZE]
-        model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
-        model.load_state_dict(model_data[MODEL_STATE])
-    else:
-        model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
+    wandb.config = {
+        'learning_rate': learning_rate,
+        'epochs': num_epoch,
+        'batch_size': batch_size,
+        'input_size': input_size,
+        'hidden_size': hidden_size,
+        'output_size': output_size,
+        'device': device
+    }
+
+    model = get_model(torch_file_path_load, input_size,
+                      hidden_size, output_size, device)
 
     # prepare json file
     dir_name: str = 'models_1.5_hl'
     json_file_name: str = 'accuracy_loss_data.json'
     json_model_name: str = f'NeuralNetSmall(input:{input_size}, hidden:{hidden_size}, output:{output_size})'
+
+    wandb.config['json_model_name'] = json_model_name
 
     json_utils.init_accuracy_loss_json_file(
         json_model_name, dir_name, json_file_name
@@ -93,9 +93,25 @@ def main():
         save_model(
             data, f'{dir_name}/small_model_hidden_1.5_of_output_epoch_{epoch + 1}.pth')
 
+        # TODO calculate accuracy and precision for each model
+
     json_utils.update_loss(dir_name, json_file_name, loss_list)
 
     print('done')
+
+
+def get_model(torch_file_path: str, input_size: int, hidden_size: int, output_size: int, device) -> nn.Module:
+    # if a pretrained model exists, the weights get loaded into the model
+    model_data = load_model(torch_file_path)
+    if model_data is not None:
+        print('pretrained model found')
+        input_size = model_data[INPUT_SIZE]
+        output_size = model_data[OUTPUT_SIZE]
+        hidden_size = model_data[HIDDEN_SIZE]
+        model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
+        model.load_state_dict(model_data[MODEL_STATE])
+    else:
+        model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
 
 
 def get_criterion_and_optimizer(model: nn.Module, learning_rate: float):
