@@ -5,7 +5,7 @@ import torch
 from torch.nn import Module
 from torch.utils.data import DataLoader
 
-from utils import device
+from constants import device
 
 # used as source: https://gist.github.com/SuperShinyEyes/dcc68a08ff8b615442e3bc6a9b55a354
 
@@ -26,7 +26,8 @@ def get_false_negatives(y_true: torch.Tensor, y_predictions: torch.Tensor) -> to
 
 
 def get_precision(data_loader: DataLoader, model: Module) -> Tuple[float, float, float]:
-    """This function returns a tuple with the precision of the model and the true positives and total predicted positives
+    """This function returns a tuple with the precision of the model and
+    the true positives and total predicted positives
 
     Precision = True Positives / Total Predicted Positives
     """

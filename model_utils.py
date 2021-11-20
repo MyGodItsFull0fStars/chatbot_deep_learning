@@ -7,7 +7,10 @@ import torch
 from torch.nn import Module
 from torch.utils.data import DataLoader, Dataset
 
-from constants import *
+from constants import (
+    all_words, tags, all_words_dict,
+    INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, MODEL_STATE
+)
 from model import NeuralNetSmall
 from squad import Squad
 from utils import bag_of_words, get_training_device, tokenize
@@ -91,7 +94,7 @@ def get_model(dir_name: str, model_file_name: str) -> Module:
     elif os.path.exists(model_file_name):
         model = get_model_from_torch_file(model_file_name)
     else:
-        print(f'file name does not exist')
+        print('file name does not exist')
 
     return model
 
@@ -131,10 +134,10 @@ def get_data_loader(train_data_from_range: int, train_data_to_range: int, batch_
 
     train_data: TrainData = TrainData(
         train_data_from_range, train_data_to_range)
-    X_train, y_train = train_data.get_X_y_train()
+    x_train, y_train = train_data.get_X_y_train()
 
     train_loader = DataLoader(
-        dataset=ChatDataSet(X_train, y_train),
+        dataset=ChatDataSet(x_train, y_train),
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,

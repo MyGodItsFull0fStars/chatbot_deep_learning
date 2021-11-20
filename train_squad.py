@@ -2,9 +2,7 @@
 from typing import List, Tuple
 
 import torch
-from torch._C import get_device
 import torch.nn as nn
-import numpy as np
 import wandb
 
 import json_utils
@@ -94,6 +92,12 @@ def main():
             data, f'{dir_name}/small_model_hidden_1.5_of_output_epoch_{epoch + 1}.pth')
 
         # TODO calculate accuracy and precision for each model
+        wandb.log({
+            'accuracy': 0,
+            'precision': 0,
+            'recall': 0,
+            'f1_score': 0
+        })
 
     json_utils.update_loss(dir_name, json_file_name, loss_list)
 
@@ -112,6 +116,8 @@ def get_model(torch_file_path: str, input_size: int, hidden_size: int, output_si
         model.load_state_dict(model_data[MODEL_STATE])
     else:
         model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
+
+    return model
 
 
 def get_criterion_and_optimizer(model: nn.Module, learning_rate: float):
