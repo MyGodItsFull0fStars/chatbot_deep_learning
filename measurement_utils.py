@@ -1,4 +1,5 @@
 import os
+import sys
 import threading
 from queue import Queue
 from typing import List, Tuple
@@ -7,8 +8,6 @@ from torch.utils.data.dataloader import DataLoader
 
 import json_utils
 import model_utils
-
-import sys
 
 # lock = threading.Lock()
 thread_list: List[threading.Thread] = []
@@ -72,11 +71,6 @@ def __init_threads(num_of_threads: int):
         thread.daemon = True
         thread_list.append(thread)
         thread.start()
-
-
-def __stop_threads():
-    for thread in thread_list:
-        thread.join()
 
 
 def __start_calculating(model_list: List[str]):
