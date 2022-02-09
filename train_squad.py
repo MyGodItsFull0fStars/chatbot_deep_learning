@@ -115,7 +115,7 @@ def main():
     # Hyperparameters
     batch_size: int = 32
     input_size = len(train_data.all_words)
-    hidden_size = 128
+    hidden_size = 64
     output_size = len(train_data.tags)
     learning_rate = 0.001
     num_epoch = 1000
