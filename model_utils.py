@@ -26,10 +26,10 @@ SQUAD_FILE_PATH: str = 'squad_dataset.json'
 class TrainData:
     def __init__(self, from_range: int = None, to_range: int = None) -> None:
         self.all_words = all_words
-        self.X_y = []
+        self.X_y: list = []
         self.tags = tags
-        self.X_train = []
-        self.y_train = []
+        self.X_train: list = []
+        self.y_train: list = []
 
         self.from_range = from_range if from_range is not None else 0
 
@@ -69,15 +69,15 @@ class TrainData:
 
 
 class ChatDataSet(Dataset):
-    def __init__(self, X_train, y_train) -> None:
+    def __init__(self, x_train, y_train) -> None:
         super().__init__()
-        self.n_samples = len(X_train)
-        self.X_data_ = deepcopy(X_train)
+        self.n_samples = len(x_train)
+        self.x_data_ = deepcopy(x_train)
         self.y_data_ = deepcopy(y_train)
 
     # dataset[idx]
     def __getitem__(self, index) -> Tuple:
-        return self.X_data_[index], self.y_data_[index]
+        return self.x_data_[index], self.y_data_[index]
 
     def __len__(self) -> int:
         return self.n_samples
@@ -101,16 +101,18 @@ def get_model(dir_name: str, model_file_name: str) -> Module:
 
 def get_model_from_torch_file(model_file_name: str) -> Module:
     model_data = load_model(model_file_name)
-    if model_data is not None:
-        input_size = model_data[INPUT_SIZE]
-        output_size = model_data[OUTPUT_SIZE]
-        hidden_size = model_data[HIDDEN_SIZE]
-        model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
-        model.load_state_dict(model_data[MODEL_STATE])
 
-        return model
-    else:
+    if model_data is None:
         raise ValueError('invalid file name, cannot load torch file')
+        
+    input_size = model_data[INPUT_SIZE]
+    output_size = model_data[OUTPUT_SIZE]
+    hidden_size = model_data[HIDDEN_SIZE]
+    model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
+    model.load_state_dict(model_data[MODEL_STATE])
+
+    return model
+
 
 
 def save_model(data: dict, file_name: str = "data.pth"):
@@ -125,7 +127,11 @@ def load_model(file_name: str = "data.pth"):
         return None
 
 
-def get_data_loader(train_data_from_range: int, train_data_to_range: int, batch_size: int, num_workers: int) -> DataLoader:
+def get_data_loader(train_data_from_range: int,
+                    train_data_to_range: int,
+                    batch_size: int,
+                    num_workers: int,
+                    shuffle: bool = False) -> DataLoader:
     train_data_to_range = (
         train_data_to_range
         if train_data_to_range <= max_data_set
