@@ -3,6 +3,8 @@ import torch
 
 
 class BertUtils():
+    """Bert Utility Class
+    """
 
     def __init__(self, model: BertForQuestionAnswering = None, tokenizer: BertTokenizer = None):
         """Initializes the Utility Class for BERT
