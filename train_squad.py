@@ -7,7 +7,7 @@ import wandb
 
 import json_utils
 from constants import (HIDDEN_SIZE, INPUT_SIZE, MODEL_STATE, OUTPUT_SIZE,
-                       all_words, tags)
+                       all_words, tags, device)
 from model import NeuralNetSmall, get_model_data, save_model
 from model_utils import get_data_loader, load_model
 from utils import get_training_device
@@ -33,8 +33,6 @@ def main():
     # amount of maximum data sets available
     max_data_set = 442
     step = 20
-
-    device = get_training_device()
 
     wandb.config = {
         'learning_rate': learning_rate,
