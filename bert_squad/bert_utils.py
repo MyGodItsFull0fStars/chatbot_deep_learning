@@ -43,14 +43,14 @@ class BertUtils():
         if print_output:
             print(f'Query has {len(input_ids):,} tokens.\n')
 
-        outputs = self.get_model_outputs(input_ids)
+        outputs = self._get_model_outputs(input_ids)
 
-        answer = self.get_answer(input_ids, outputs)
+        answer = self._get_answer(input_ids, outputs)
 
         return answer
         
 
-    def get_answer(self, input_ids, model_outputs) -> str:
+    def _get_answer(self, input_ids, model_outputs) -> str:
         """Returns the answer given the input_ids and the model_outputs
 
         Args:
@@ -60,22 +60,24 @@ class BertUtils():
         Returns:
             str: The answer provided by the models output
         """
-        answer_start, answer_end = BertUtils.get_answer_start_end(model_outputs)
+        answer_start, answer_end = BertUtils._get_answer_start_end(model_outputs)
         # Convert input tokens to string representation
         tokens = self.tokenizer.convert_ids_to_tokens(input_ids)
 
         answer_list = [tokens[answer_start]]
         
         for idx in range(answer_start + 1, answer_end + 1):
+            
             if tokens[idx][0:2] == '##':
-                answer_list[idx-1] = answer_list[idx-1] + tokens[idx][2:]
-
+                previous_idx = len(answer_list)
+                # append the split answer to the previous part
+                answer_list[previous_idx-1] = answer_list[previous_idx-1] + tokens[idx][2:]
             else:
                 answer_list.append(tokens[idx])
 
         return ' '.join(answer_list)
 
-    def get_model_outputs(self, input_ids):
+    def _get_model_outputs(self, input_ids):
         """Return the model outputs inferences from the input_ids
 
         Args:
@@ -88,7 +90,7 @@ class BertUtils():
         input_tokens = torch.tensor([input_ids])
 
         # segment IDs to differentiate question from answer_text
-        segment_ids = self.get_segment_ids(input_ids)
+        segment_ids = self._get_segment_ids(input_ids)
         segment_separation = torch.tensor([segment_ids])
 
         return self.model(input_tokens,
@@ -99,7 +101,7 @@ class BertUtils():
 
 
         
-    def get_segment_ids(self, input_ids) -> list:
+    def _get_segment_ids(self, input_ids) -> list:
         """Creates segment ids from the input ids
 
         Args:
@@ -122,7 +124,7 @@ class BertUtils():
         return segment_ids
 
     @staticmethod
-    def get_answer_start_end(model_outputs) -> tuple:
+    def _get_answer_start_end(model_outputs) -> tuple:
         start_scores, end_scores = model_outputs.start_logits, model_outputs.end_logits
 
         answer_start = torch.argmax(start_scores)
