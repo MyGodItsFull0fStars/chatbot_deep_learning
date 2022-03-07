@@ -1,2 +1,7 @@
 __pycache__/**.pyc
 # **.pth
+*.log
+*.yaml
+*.json
+*.wandb
+**/requirements.txt
