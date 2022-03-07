@@ -36,6 +36,11 @@
 
         The task of natural language comprehension was a more challenging approach, since opposed to the chatbot using FNN that was used similar to a lookup table, finding the correct answer to a question given some context was a daring and unknown field to me.
         This comprehension is already widely used by companies such as Google, and often when you look for a topic, you get a well-defined short summary presented above all query objects.
+        Creating NLP-models that are able to comprehend text at a human reader level is a goal for a long time in the computer science field and while there are already very impressive models available, this level of text comprehension is yet not achieved.
+        
+        For this project, the text comprehension neural networks called \texttt{BERT} and \texttt{DistilBERT} are being used.
+        Especially BERT already reaches impressive amounts of text comprehension in competitions such as the competition using the \emph{Stanford Question Answering Dataset (SQuAD)}.
+
 
 
     \section{Data}
@@ -52,6 +57,8 @@
             As an example, a section from the \texttt{Prime\_number} data chunk was taken as can be seen in figure \ref{fig:-squad-example}. On the left, the \emph{context} is shown, which is the text paragraph that contains the answer at some position.
 
             In the right column of the figure, the question is presented in bold letters, and the ground truth answer that is to be found is highlighted in green. \emph{Note: This is only partially represents the actual data that is provided by SQuAD.}
+
+            % TODO Add reference to the one that will be part of the evaluation and shows the inner structure of a SQuAD dataset element
 
 
             \begin{figure}[h!]
