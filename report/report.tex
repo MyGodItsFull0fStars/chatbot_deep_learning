@@ -38,8 +38,8 @@
         This comprehension is already widely used by companies such as Google, and often when you look for a topic, you get a well-defined short summary presented above all query objects.
         Creating NLP-models that are able to comprehend text at a human reader level is a goal for a long time in the computer science field and while there are already very impressive models available, this level of text comprehension is yet not achieved.
         
-        For this project, the text comprehension neural networks called \texttt{BERT} and \texttt{DistilBERT} are being used.
-        Especially BERT already reaches impressive amounts of text comprehension in competitions such as the competition using the \emph{Stanford Question Answering Dataset (SQuAD)}.
+        For this project, the text comprehension neural networks called \texttt{BERT} is being used.
+        BERT reaches impressive amounts of text comprehension in competitions such as the competition using the \emph{Stanford Question Answering Dataset (SQuAD)}.
 
 
 
@@ -58,8 +58,6 @@
 
             In the right column of the figure, the question is presented in bold letters, and the ground truth answer that is to be found is highlighted in green. \emph{Note: This is only partially represents the actual data that is provided by SQuAD.}
 
-            % TODO Add reference to the one that will be part of the evaluation and shows the inner structure of a SQuAD dataset element
-
 
             \begin{figure}[h!]
                 \centering
@@ -69,17 +67,67 @@
             \end{figure}
 
             The dataset is provided by the company \emph{Hugging Face}\footnote{URL: https://huggingface.co/}
-            
+            This company provides a vast amount of datasets and (pretrained) machine learning models. 
+            Those are also used in this project and are downloaded by using the Python library \texttt{datasets} created by Hugging Face.
 
+            \begin{figure}
+                \centering
+                \caption{Usage of the \texttt{datasets} library}
+                \includegraphics[scale=0.8]{figures/datasets_library.png}
+                \ref{fig:-datasets-library}
+            \end{figure}
+
+            With the help of the code in figure \ref{fig:-datasets-library} the train- and validation datasets can be downloaded.
+            Each set consists of the following components:
+            \begin{itemize}
+                \item \textbf{Id:} The ID of the SQuAD Element.
+                \item \textbf{Title:} The title of the Wikipedia entry.
+                \item \textbf{Question:} A string containing the question the model gets asked.
+                \item \textbf{Context:} A larger text sequense that contains the answer to the question.
+                \item \textbf{Answer:} The part of the context, that answers the question as well as the start position of the answer in the context.
+            \end{itemize}
+
+            \begin{figure}
+                \centering
+                \caption{SQuAD Train Dataset Example}
+                \includegraphics[scale=0.8]{figures/train_dataset_example.png}
+                \ref{fig:-train-dataset-example}
+            \end{figure}
+
+        \subsection{Data Properties}
+        \label{subsec:-data-properties}
+            
+            Placeholder 
+            % TODO what are the properties of your data, like balance, missing values, scale, etc.
+
+        \subsection{Data Preprocessing/Augmenting}
+        \label{subsec:-data-preprocessing-augmenting}
+
+            Multiple steps of data preprocessing or data augmentation were used to be able to use the dataset for the machine learning approach used. 
+            Those steps are mentioned in this section according to the sequense in the \texttt{bert\_training.ipynb} they are actually used.
+
+            \paragraph{Tokenization}
+            \label{par:-data-preprocessing-augmenting---tokenization}
+
+                Placeholder
+
+
+            \paragraph{Adding Token Positions}
+            \label{par:-data-preprocessing-augmenting---adding-token-positions}
+
+                Placeholder
+            
     \section{Theoretical Part}
     \label{sec:theoretical-part}
-
-    % Theoretical part: literature overview: which models from the literature are suitable for this problem given your data and why? which algorithms can be used to train them? how these models are related to your hypothesis? present an overview of your approach: what steps are executed in the learning pipeline? which hyperparameters of the learning algorithm are available and how they can influence the results? You must show that you applied methods considered during the semester to the selected problem. Feel free to include any figures or tables helping to describe your method and compare it with others. If you use information from other sources, please cite it properly.
-        Placeholder
-
+            
+            % Theoretical part: literature overview: which models from the literature are suitable for this problem given your data and why? which algorithms can be used to train them? how these models are related to your hypothesis? present an overview of your approach: what steps are executed in the learning pipeline? which hyperparameters of the learning algorithm are available and how they can influence the results? You must show that you applied methods considered during the semester to the selected problem. Feel free to include any figures or tables helping to describe your method and compare it with others. If you use information from other sources, please cite it properly.
+            Placeholder
+            
     \section{Implementation}
     \label{sec:implementation}
-
+            
+            Transformers is responsible for downloading the machine learning model \texttt{BERT}.
+            \texttt{BERT} is short for \emph{Bi}
 
     % Implementation: how did you implement your approach? which tools were used? show interesting snippets or present your algorithms.
 
