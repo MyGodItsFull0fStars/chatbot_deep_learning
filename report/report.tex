@@ -1,4 +1,5 @@
 \input{settings} % add packages, settings, and declarations in settings.tex
+\usepackage{wrapfig}
 
 \title{Text Comprehension}
 \author{Christian Bauer, 01560011}
@@ -55,9 +56,7 @@
         \label{subsec:data-example}
 
             As an example, a section from the \texttt{Prime\_number} data chunk was taken as can be seen in figure \ref{fig:-squad-example}. On the left, the \emph{context} is shown, which is the text paragraph that contains the answer at some position.
-
             In the right column of the figure, the question is presented in bold letters, and the ground truth answer that is to be found is highlighted in green. \emph{Note: This is only partially represents the actual data that is provided by SQuAD.}
-
 
             \begin{figure}[h!]
                 \centering
@@ -76,7 +75,7 @@
                 \includegraphics[scale=0.8]{figures/datasets_library.png}
                 \label{fig:-datasets-library}
             \end{figure}
-
+            
             With the help of the code in figure \ref{fig:-datasets-library} the train- and validation datasets can be downloaded.
             Each set consists of the following components:
             \begin{itemize}
@@ -98,13 +97,42 @@
         \label{subsec:-data-properties}
             
         % TODO what are the properties of your data, like balance, missing values, scale, etc.
-            Placeholder 
+            \paragraph{General Data Properties and Missing Values}
+            \label{par:-data-properties---missing-values}
+                The dataset consists of a total of $98169$ SQuAD elements that are split into a test dataset and validation dataset. The training dataset consists of $87599$ SQuAD elements and the validation dataset consists of $10570$.
 
+                \begin{wrapfigure}{R}{0.5\textwidth}
+             
+                    \caption{Missing Values}
+                    \includegraphics[width=0.49\textwidth]{figures/data_prop_no_missing_elements.png}
+                    \label{fig:-data-properties---no-missing-values}
+                \end{wrapfigure}
+
+                The dataset is complete in the sense that no dataset element is missing a field value. This was tested in the Jupyter file \texttt{bert\_squad/data\_properties.ipynb} and can be seen in figure \ref{fig:-data-properties---no-missing-values}.
+
+            
+            \paragraph{Data Balance of SQuAD}
+            \label{par:-data-properties---balance-of-data}
+
+                The dataset itself is quite unbalanced, with the maximum being a total of $817$ entries and the minimum being only $22$ Question Answer entries. 
+                The mean over the entire training dataset being $198.18778$ entries per title.
+                In figure \ref{fig:-data-properties---balance-of-data-barplot} a bar plot is used over all values of the training dataset to display the imbalance of the dataset visually.
+                As can be seen in the graph, the number of entries for each data entry varies a lot over the overall training dataset.
+
+                \begin{figure}[h!]
+                    \centering
+                    \caption{Balance of SQuAD}
+                    \includegraphics[width=0.95\textwidth]{figures/balance_of_squad_dataset.png}
+                    \label{fig:-data-properties---balance-of-data-barplot}
+                \end{figure}
+
+
+\pagebreak
         \subsection{Data Preprocessing/Augmenting}
         \label{subsec:-data-preprocessing-augmenting}
 
             Multiple steps of data preprocessing or data augmentation were used to be able to use the dataset for the machine learning approach used. 
-            Those steps are mentioned in this section according to the sequense in the \texttt{bert\_training.ipynb} they are actually used.
+            Those steps are mentioned in this section according to the sequence in the \texttt{bert\_training.ipynb} they are actually used.
 
             \paragraph{Tokenization}
             \label{par:-data-preprocessing-augmenting---tokenization}
