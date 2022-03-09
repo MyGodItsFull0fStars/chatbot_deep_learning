@@ -1,7 +1,22 @@
 __pycache__/**.pyc
-# **.pth
+*.pth
 *.log
 *.yaml
 *.json
 *.wandb
 **/requirements.txt
+
+*.txt
+*.json
+*.pyc
+
+
+# Latex files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.gz
+*.toc
+*.out
+*.fls
