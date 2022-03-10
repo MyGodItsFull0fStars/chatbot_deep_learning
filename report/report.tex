@@ -71,7 +71,7 @@
 
             \begin{figure}
                 \centering
-                \caption{Usage of the \texttt{datasets} library}
+                \caption{Usage of the \texttt{datasets} library\cite[\texttt{data\_properties.ipynb}]{innerProject}}
                 \includegraphics[scale=0.8]{figures/datasets_library.png}
                 \label{fig:-datasets-library}
             \end{figure}
@@ -79,8 +79,8 @@
             With the help of the code in figure \ref{fig:-datasets-library} the train- and validation datasets can be downloaded.
             Each set consists of the following components:
             \begin{itemize}
-                \item \textbf{Id:} The ID of the SQuAD Element.
-                \item \textbf{Title:} The title of the Wikipedia entry.
+                \item \textbf{Id:} The unique identifier of the SQuAD element.
+                \item \textbf{Title:} The title of the Wikipedia entry the SQuAD element is based on.
                 \item \textbf{Question:} A string containing the question the model gets asked.
                 \item \textbf{Context:} A larger text sequence that contains the answer to the question.
                 \item \textbf{Answer:} The part of the context, that answers the question as well as the start position of the answer in the context.
@@ -88,7 +88,7 @@
 
             \begin{figure}
                 \centering
-                \caption{SQuAD Train Dataset Example}
+                \caption{SQuAD Train Dataset Example\cite[\texttt{bert\_training.ipynb}]{innerProject}}
                 \includegraphics[width=0.99\textwidth]{figures/train_dataset_example.png}
                 \label{fig:-train-dataset-example}
             \end{figure}
@@ -99,22 +99,24 @@
             The data properties were investigated with the focus of rather general values, like number of data entries in total, missing values and the balance of the dataset. All the figures used in this section are taken from the Jupyter file \texttt{data\_properties.ipynb} that can be found in the \texttt{bert\_squad} package.
             
         % TODO what are the properties of your data, like balance, missing values, scale, etc.
-            \paragraph{General Data Properties and Missing Values}
-            \label{par:-data-properties---missing-values}
+            \subsubsection{General Data Properties and Missing Values}
+            \label{subsubsection:-data-properties---missing-values}
                 The dataset consists of a total of $98169$ SQuAD elements that are split into a test dataset and validation dataset. The training dataset consists of $87599$ SQuAD elements and the validation dataset consists of $10570$.
 
                 \begin{wrapfigure}{R}{0.5\textwidth}
              
                     \caption{Missing Values}
-                    \includegraphics[width=0.49\textwidth]{figures/data_prop_no_missing_elements.png}
+                    \begin{center}
+                        \includegraphics[width=0.49\textwidth]{figures/data_prop_no_missing_elements.png}
+                    \end{center}
                     \label{fig:-data-properties---no-missing-values}
                 \end{wrapfigure}
 
                 The dataset is complete in the sense that no dataset element is missing a field value. This was tested in the Jupyter file \texttt{bert\_squad/data\_properties.ipynb} and can be seen in figure \ref{fig:-data-properties---no-missing-values}.
 
             
-            \paragraph{Data Balance of SQuAD}
-            \label{par:-data-properties---balance-of-data}
+            \subsubsection{Data Balance of SQuAD}
+            \label{subsubsection:-data-properties---balance-of-data}
 
                 The dataset itself is quite unbalanced, with the maximum being a total of $817$ entries and the minimum being only $22$ Question Answer entries. 
                 The mean over the entire training dataset being $198.18778$ entries per title.
@@ -129,6 +131,15 @@
                 \end{figure}
 
 
+            \subsubsection{Answer Position Off by One or Two Positions}
+            \label{subsubsection:-data-properties---incorrect-answer-positions}
+
+                In the used reference "How to Train Bert For Q\&A in Any Language"\cite{bertTorwardsDataScience} it was stated, that 
+                some SQuAD answer positions might be off by one or two tokens, and this is corrected in the function called \texttt{add\_end\_idx} (further discussed in section \ref{section:-preparing-data-with-add-end-idx}).
+                While investigating the dataset for the occurrence of such misaligned answers, none could be found. 
+                The test of this was quite simple, there happens a check for a misaligned answer position inside the code, and for the investigation every SQuAD element was added to a list, and since this list was still empty after both the training-, and validation dataset were preprocessing with the \texttt{add\_end\_idx} function, no misaligned elements either exist or couldn't be found by this function. 
+                This leads to the assumption, that this statement either refers to another dataset, the dataset provided by huggingface was corrected in the meantime, or that this was a wrong assumption by the author.
+
 \pagebreak
         \subsection{Data Preprocessing/Augmenting}
         \label{subsec:-data-preprocessing-augmenting}
@@ -136,13 +147,73 @@
             Multiple steps of data preprocessing or data augmentation were used to be able to use the dataset for the machine learning approach used. 
             Those steps are mentioned in this section according to the sequence in the \texttt{bert\_training.ipynb} they are actually used.
 
-            \paragraph{Tokenization}
+            \subsubsection{Preprocessing with Prepare Data Function}
+            \label{subsubsec:-preparing-data-with-prep-data}
+            
+                \begin{wrapfigure}{r}{0.40\textwidth}
+                    \caption{The Function \texttt{prep\_data}}
+                    \begin{center}
+                        \includegraphics[width=0.3\textwidth]{figures/prep_data_function.png}
+                    \end{center}
+                    \label{fig:-preparing-data-with-prep-data-function}
+                \end{wrapfigure}
+                With the help of the function \texttt{prep\_data}, all irrelevant fields get omitted, such as \texttt{id, title}, since they will not be used in the training of the ML-model.
+                This function also calls another function that is responsible for adding the answer for every question in the proper manner, so they can be used for the training. This is further explained in the section \ref{section:-preparing-data-with-add-end-idx}.
+                The \texttt{prep\_data} function will be used on both the training dataset and the validation dataset before further preprocessing.
+
+
+            \subsubsection{Preprocessing with \texttt{add\_end\_idx}}
+            \label{section:-preparing-data-with-add-end-idx}
+
+                The function \texttt{add\_end\_idx} is used to make later manipulations of the answer field of each SQuAD entry easier, as well as adding the inner field \texttt{answer\_end} to it, that denotes the end index position of the \emph{gold text} (gold text denotes the answer we are expecting in the context) found in the context.
+                \begin{wrapfigure}{R}{0.6\textwidth}
+                    \caption{The Function \texttt{add\_end\_idx}}
+                    \begin{center}
+                        \includegraphics[width=0.5\textwidth]{figures/add_end_idx_function.png}
+                    \end{center}
+                    \label{fig:-data-preprocessing-augmenting---preparing-data-with-add-end-idx-function}
+                \end{wrapfigure}
+                The inner fields \texttt{'text', 'answer\_start'} both hold a list of data, each with one element, the first holding the answer text, the latter holding an integer element, that denotes the start position of the answer text. To make later manipulations and retrieval of those values easier, the fields simply will hold the single value of each list instead of the list with only one element.
+                In the next step, the end index position of the gold text will be added, which is simply the start index position plus the length of the gold text.
+
+                Next, with an index slice plus a check if the answer start and end index position inside the context match the gold text.
+                As stated in \ref{subsubsection:-data-properties---incorrect-answer-positions}, the author of the reference "How To Train Bert Q\&A in Any Language"\cite{bertTorwardsDataScience} mentioned that the positions of the indices can be misaligned for some data entries. 
+                This could not be verified with the provided code and some tests, but this part was still kept in the code in case this was referring to the SQuAD 2.0 dataset, which was not used at for now.
+                After those steps, the answers given to this function will be replaced by this augmented answer dictionary.
+
+
+            \subsubsection{Tokenization}
             \label{par:-data-preprocessing-augmenting---tokenization}
 
-                Placeholder
+                To be able to feed the dataset to the ML-model BERT, a tokenization process is necessary.
+                For this the tokenizer \texttt{BertTokenizerFast} provided by the huggingface package \texttt{transformers} is used.
+                This tokenizer can be used for both the \texttt{context} and \texttt{question} fields of all SQuAD entries and encodes each of them to an array of single tokens. 
+                As an example, the sentence "Computer Vision research has made a giant leap since AlexNet" will be tokenized to "[CLS] computer vision research has made a giant leap since alexnet [SEP]" after decoding.
+                Those encoded arrays called \texttt{input\_ids} contain special tokens required by BERT (see \ref{sect:-bert}) to properly understand the provided input. These arrays also contain the input ID for every word provided as an input to the tokenizer.
+                This can be seen in the figure \ref{fig:-tokenizer-output-decode} in the first cell, in which the example input is tokenized and a dictionary with the field \texttt{input\_ids} contains the input IDs for every word.
+                \begin{figure}[h!]
+                    \centering
+                    \caption{Tokenization of Input and Decoding To String \cite[\texttt{bert\_training.ipynb}]{innerProject}}
+                    \includegraphics[width=0.95\textwidth]{figures/tokenizer_output_decode.png}
+                    \label{fig:-tokenizer-output-decode}
+                \end{figure}
+                \emph{Note: The used tokenizer is already pretrained for the usage of text comprehension and doesn't need additional training steps.}
 
 
-            \paragraph{Adding Token Positions}
+                \paragraph{The Classification Token}
+                \label{par:-the-classification-token}
+
+                    \texttt{[CLS]} is a special classification token and the last hidden state of BERT corresponding to this token ($h_{[CLS]}$) is used for classification tasks. \cite[Section - Model Overview]{allYouNeedBERT}
+
+
+                \paragraph{The Separator Token}
+                \label{par:-the-separator-token}
+
+                    The separator token \texttt{[SEP]} has to be put at the end of a single input.
+                    When a task requires more than one input such as NLI and Q-A tasks, \texttt{[SEP]} token helps the model to understand the end of one input and the start of another input in the same sequence input. \cite[Section - Model Overview]{allYouNeedBERT}
+
+
+            \subsubsection{Adding Token Positions}
             \label{par:-data-preprocessing-augmenting---adding-token-positions}
 
                 Placeholder
@@ -150,8 +221,11 @@
     \section{Theoretical Part}
     \label{sec:theoretical-part}
             
-            % Theoretical part: literature overview: which models from the literature are suitable for this problem given your data and why? which algorithms can be used to train them? how these models are related to your hypothesis? present an overview of your approach: what steps are executed in the learning pipeline? which hyperparameters of the learning algorithm are available and how they can influence the results? You must show that you applied methods considered during the semester to the selected problem. Feel free to include any figures or tables helping to describe your method and compare it with others. If you use information from other sources, please cite it properly.
-            Placeholder
+    % Theoretical part: literature overview: which models from the literature are suitable for this problem given your data and why? which algorithms can be used to train them? how these models are related to your hypothesis? present an overview of your approach: what steps are executed in the learning pipeline? which hyperparameters of the learning algorithm are available and how they can influence the results? You must show that you applied methods considered during the semester to the selected problem. Feel free to include any figures or tables helping to describe your method and compare it with others. If you use information from other sources, please cite it properly.
+
+        \subsection{BERT}
+        \label{sect:-bert}
+            Bidirectional Encoder Representation from Transformer
             
     \section{Implementation}
     \label{sec:implementation}
