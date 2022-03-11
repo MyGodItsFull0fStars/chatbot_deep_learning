@@ -1,7 +1,7 @@
 \input{settings} % add packages, settings, and declarations in settings.tex
 \usepackage{wrapfig}
 
-\title{Text Comprehension}
+\title{Transforming Text Comprehension}
 \author{Christian Bauer, 01560011}
 \date{}
 
@@ -104,7 +104,6 @@
                 The dataset consists of a total of $98169$ SQuAD elements that are split into a test dataset and validation dataset. The training dataset consists of $87599$ SQuAD elements and the validation dataset consists of $10570$.
 
                 \begin{wrapfigure}{R}{0.5\textwidth}
-             
                     \caption{Missing Values}
                     \begin{center}
                         \includegraphics[width=0.49\textwidth]{figures/data_prop_no_missing_elements.png}
@@ -140,7 +139,7 @@
                 The test of this was quite simple, there happens a check for a misaligned answer position inside the code, and for the investigation every SQuAD element was added to a list, and since this list was still empty after both the training-, and validation dataset were preprocessing with the \texttt{add\_end\_idx} function, no misaligned elements either exist or couldn't be found by this function. 
                 This leads to the assumption, that this statement either refers to another dataset, the dataset provided by huggingface was corrected in the meantime, or that this was a wrong assumption by the author.
 
-\pagebreak
+% \pagebreak
         \subsection{Data Preprocessing/Augmenting}
         \label{subsec:-data-preprocessing-augmenting}
 
@@ -185,11 +184,11 @@
             \subsubsection{Tokenization}
             \label{par:-data-preprocessing-augmenting---tokenization}
 
-                To be able to feed the dataset to the ML-model BERT, a tokenization process is necessary.
+                To be able to feed the dataset to the ML-model BERT (see \ref{sec:-bert}), a tokenization process is necessary.
                 For this the tokenizer \texttt{BertTokenizerFast} provided by the huggingface package \texttt{transformers} is used.
                 This tokenizer can be used for both the \texttt{context} and \texttt{question} fields of all SQuAD entries and encodes each of them to an array of single tokens. 
                 As an example, the sentence "Computer Vision research has made a giant leap since AlexNet" will be tokenized to "[CLS] computer vision research has made a giant leap since alexnet [SEP]" after decoding.
-                Those encoded arrays called \texttt{input\_ids} contain special tokens required by BERT (see \ref{sect:-bert}) to properly understand the provided input. These arrays also contain the input ID for every word provided as an input to the tokenizer.
+                Those encoded arrays called \texttt{input\_ids} contain special tokens required by BERT to properly understand the provided input. These arrays also contain the input ID for every word provided as an input to the tokenizer.
                 This can be seen in the figure \ref{fig:-tokenizer-output-decode} in the first cell, in which the example input is tokenized and a dictionary with the field \texttt{input\_ids} contains the input IDs for every word.
                 \begin{figure}[h!]
                     \centering
@@ -210,23 +209,63 @@
                 \label{par:-the-separator-token}
 
                     The separator token \texttt{[SEP]} has to be put at the end of a single input.
-                    When a task requires more than one input such as NLI and Q-A tasks, \texttt{[SEP]} token helps the model to understand the end of one input and the start of another input in the same sequence input. \cite[Section - Model Overview]{allYouNeedBERT}
+                    When a task requires more than one input such as NLI and Q-A tasks, \texttt{[SEP]} token helps the model to understand the end of one input and the start of another input in the same sequence input \cite[Section - Model Overview]{allYouNeedBERT}.
 
 
             \subsubsection{Adding Token Positions}
             \label{par:-data-preprocessing-augmenting---adding-token-positions}
 
-                Placeholder
-            
+                Since tokens get fed into the ML-model, the start and end positions of the tokens also need to be provided.
+                This is done with the help of the function \texttt{add\_token\_positions} found in the \texttt{bert\_training.ipynb} file of the \texttt{bert\_squad} package.
+
+\pagebreak
     \section{Theoretical Part}
     \label{sec:theoretical-part}
             
     % Theoretical part: literature overview: which models from the literature are suitable for this problem given your data and why? which algorithms can be used to train them? how these models are related to your hypothesis? present an overview of your approach: what steps are executed in the learning pipeline? which hyperparameters of the learning algorithm are available and how they can influence the results? You must show that you applied methods considered during the semester to the selected problem. Feel free to include any figures or tables helping to describe your method and compare it with others. If you use information from other sources, please cite it properly.
 
-        \subsection{BERT}
-        \label{sect:-bert}
-            Bidirectional Encoder Representation from Transformer
-            
+    
+    
+    \subsection{Attention}
+    \label{sec:-attention}
+    
+    Attention is an important building block inside the Transformers model architecture (see \ref{sec:-transformers}).
+    It was developed to increase the performance of encoder-decoder Recurrent Neural Network (RNN) models.
+    One of the drawbacks of using encoder-decoder architectures was the fixed input vector length which will be decoded to an output at each step.
+    This decoding step might result in issues, if the neural network has to decode an input that consists of long sentences, especially those longer than the ones used to train the model.
+
+    The basic idea of Attention is that the model will try to predict an output word based on the most relevant information of the input, so it only takes parts of the given input into account instead of the whole sentence.
+    This means, attention tries to give more importance to a few input words.
+
+    Two types of attention layers are used in BERT, the "Self Attention" and the "Multi Head Attention".
+    A short introduction to both concepts can be found at "Understanding Attention Mechanism: Natural Language Processing"
+
+
+    
+    \subsection{Transformers}
+    \label{sec:-transformers}
+    
+    Placeholder
+    
+    \begin{wrapfigure}{r}{0.4\textwidth}
+        \caption{The Transformer - model architecture \cite[Figure 1 on page 3]{vaswani2017attention}}
+        \begin{center}
+            \includegraphics[width=0.39\textwidth]{figures/transformer_model_architecture.png}
+        \end{center}
+    \end{wrapfigure}
+    
+    
+    \subsection{BERT}
+    \label{sec:-bert}
+
+        \textbf{B}idirectional \textbf{E}ncoder \textbf{R}epresentation from \textbf{T}ransformer, often abbreviated to BERT heavily relies on the concept of \emph{Attention} and the usage of \emph{Transformers} that are presented in the famous paper "Attention is All You Need"\cite{vaswani2017attention}.
+        Inside the ML-model, there is a multilayer bidirectional transformer encoder structure, hence the name of BERT and in general it is differentiated between two types of BERT models, that are named BERT$_{Base}$ and BERT$_{Large}$.
+        The BERT$_{Base}$ model has 12 layers of transformer blocks, a hidden size of $768$ and 12 self-attention heads as well as 110 million trainable parameters. \textbf{Note: This is the model type I used in this project.}
+
+        BERT$_{Large}$ is even bigger, using $24$ layers of transformer blocks and has a hidden size of $1024$, it uses 16 self-attention heads and has $340$ million trainable parameters. This of course is too big for a regular computing device to retrieve a feasible result.
+
+                
+\pagebreak
     \section{Implementation}
     \label{sec:implementation}
             
@@ -251,6 +290,8 @@
 
     \section{Supplementary Materials}
     \label{sec:supplementary-materials}
+
+        owijfgiowjeiofjio
 
     % Supplementary materials: The report must be submitted as an archive comprising all code and artifacts (data, custom python modules, images, videos, etc.) required for its correct representation, evaluation, and exemplification of your work. If data is too large for a submission, please provide a link where this data can be downloaded from.
 
