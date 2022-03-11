@@ -237,22 +237,27 @@
     The basic idea of Attention is that the model will try to predict an output word based on the most relevant information of the input, so it only takes parts of the given input into account instead of the whole sentence.
     This means, attention tries to give more importance to a few input words.
 
-    Two types of attention layers are used in BERT, the "Self Attention" and the "Multi Head Attention".
-    A short introduction to both concepts can be found at "Understanding Attention Mechanism: Natural Language Processing"
+    Three types of attention layers are used in BERT, the "Self Attention", "Scaled Dot-Product Attention" and the "Multi Head Attention".
+    A short introduction to all three concepts can be found at "Understanding Attention Mechanism: Natural Language Processing" \cite{understandingAttention}.
 
-
-    
-    \subsection{Transformers}
-    \label{sec:-transformers}
-    
-    Placeholder
-    
     \begin{wrapfigure}{r}{0.4\textwidth}
         \caption{The Transformer - model architecture \cite[Figure 1 on page 3]{vaswani2017attention}}
         \begin{center}
             \includegraphics[width=0.39\textwidth]{figures/transformer_model_architecture.png}
         \end{center}
     \end{wrapfigure}
+    
+    \subsection{Transformers}
+    \label{sec:-transformers}
+    
+        Attention finds its application in the concept of Transformers. 
+        In Transformers, attention is used in different ways.
+        In the Transformers "encoder-decoder attention" layers they are used to mimic the typical encoder-decoder behavior, the encoder uses self-attention layers to attend all positions in the previous layer of the encoder, and similarly this is used for the decoder as well to attend all positions.
+        For this architecture, it is required to use a softmax to mask out all values of the input that correspond to illegal connections to preserve auto-regressive properties.
+
+        \begin{quote}
+            Put simply, \textbf{an autoregressive model is merely a feed-forward model which predicts future values from past values.} \cite{autoregressiveGeorge}
+        \end{quote}
     
     
     \subsection{BERT}
