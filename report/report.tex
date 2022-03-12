@@ -1,5 +1,7 @@
 \input{settings} % add packages, settings, and declarations in settings.tex
 \usepackage{wrapfig}
+\usepackage{caption}
+\usepackage{subcaption}
 
 \title{Transforming Text Comprehension}
 \author{Christian Bauer, 01560011}
@@ -17,8 +19,9 @@
 
 % A report should be a 6-8 pages long document structured as a research paper, as shown below. You may modify this structure, but the suggested list is a good starting point.
 
+\setcounter{tocdepth}{2}
 \tableofcontents
-    
+
 \pagebreak
 
     \section{Motivation}
@@ -229,22 +232,23 @@
     \subsection{Attention}
     \label{sec:-attention}
     
-    Attention is an important building block inside the Transformers model architecture (see \ref{sec:-transformers}).
-    It was developed to increase the performance of encoder-decoder Recurrent Neural Network (RNN) models.
-    One of the drawbacks of using encoder-decoder architectures was the fixed input vector length which will be decoded to an output at each step.
-    This decoding step might result in issues, if the neural network has to decode an input that consists of long sentences, especially those longer than the ones used to train the model.
+        Attention is an important building block inside the Transformers model architecture (see \ref{sec:-transformers}).
+        It was developed to increase the performance of encoder-decoder Recurrent Neural Network (RNN) models.
+        One of the drawbacks of using encoder-decoder architectures was the fixed input vector length which will be decoded to an output at each step.
+        This decoding step might result in issues, if the neural network has to decode an input that consists of long sentences, especially those longer than the ones used to train the model.
 
-    The basic idea of Attention is that the model will try to predict an output word based on the most relevant information of the input, so it only takes parts of the given input into account instead of the whole sentence.
-    This means, attention tries to give more importance to a few input words.
+        The basic idea of Attention is that the model will try to predict an output word based on the most relevant information of the input, so it only takes parts of the given input into account instead of the whole sentence.
+        This means, attention tries to give more importance to a few input words.
 
-    Three types of attention layers are used in BERT, the "Self Attention", "Scaled Dot-Product Attention" and the "Multi Head Attention".
-    A short introduction to all three concepts can be found at "Understanding Attention Mechanism: Natural Language Processing" \cite{understandingAttention}.
+        Three types of attention layers are used in BERT, the "Self Attention", "Scaled Dot-Product Attention" and the "Multi Head Attention".
+        A short introduction to all three concepts can be found at "Understanding Attention Mechanism: Natural Language Processing" \cite{understandingAttention}.
 
-    \begin{wrapfigure}{r}{0.4\textwidth}
+    \begin{wrapfigure}{R}{0.35\textwidth}
         \caption{The Transformer - model architecture \cite[Figure 1 on page 3]{vaswani2017attention}}
         \begin{center}
-            \includegraphics[width=0.39\textwidth]{figures/transformer_model_architecture.png}
+            \includegraphics[width=0.3\textwidth]{figures/transformer_model_architecture.png}
         \end{center}
+        \label{fig:-transformer-architecture}
     \end{wrapfigure}
     
     \subsection{Transformers}
@@ -252,7 +256,7 @@
     
         Attention finds its application in the concept of Transformers. 
         In Transformers, attention is used in different ways.
-        In the Transformers "encoder-decoder attention" layers they are used to mimic the typical encoder-decoder behavior, the encoder uses self-attention layers to attend all positions in the previous layer of the encoder, and similarly this is used for the decoder as well to attend all positions.
+        In the Transformers "encoder-decoder attention" layers (see figure \ref{fig:-transformer-architecture}) they are used to mimic the typical encoder-decoder behavior, the encoder uses self-attention layers to attend all positions in the previous layer of the encoder, and similarly this is used for the decoder as well to attend all positions.
         For this architecture, it is required to use a softmax to mask out all values of the input that correspond to illegal connections to preserve auto-regressive properties.
 
         \begin{quote}
@@ -268,35 +272,135 @@
         The BERT$_{Base}$ model has 12 layers of transformer blocks, a hidden size of $768$ and 12 self-attention heads as well as 110 million trainable parameters. \textbf{Note: This is the model type I used in this project.}
 
         BERT$_{Large}$ is even bigger, using $24$ layers of transformer blocks and has a hidden size of $1024$, it uses 16 self-attention heads and has $340$ million trainable parameters. This of course is too big for a regular computing device to retrieve a feasible result.
+        BERT can be used for a multitude of NLP problems, such as Question Answering (what I did in this project), Neural Machine Translation, Sentiment Analysis and Text Summarization.
+   
+
+        % TODO pic of BERT
+        A completely untrained BERT model needs to pre-train on two unsupervised tasks ("Masked Language Model" (MLM) and "Next Sentence Prediction" (NSP)) before it can be used for the text comprehension task to retrieve the correct answer of a SQuAD entry. 
+        
+        \begin{enumerate}
+            \item \textbf{Masked Language Model (MLM)}
+            \begin{itemize}
+                \item In this task, BERT will mask random words in a sentence and try to find the correct words, that are masked.
+                \item Example: The \texttt{[MASK1]} brown fox \texttt{[MASK2]} over the lazy dog should result in returning: \texttt{[MASK1]} = quick and \texttt{[MASK2]} = jumped.
+            \end{itemize}
+
+            \item \textbf{Next Sentence Prediction (NSP)}
+            \begin{itemize}
+                \item BERT is provided with two sentences as an input and tries to determine if the second sentence is a correct successor to the first sentence.
+                \item Example: \texttt{Sentence A}: Does Bertram live in Atlanta? \texttt{Sentence B}: Yes, he lives there. The correct answer should be \texttt{True}, \texttt{Sentence B} follows \texttt{Sentence A}.
+            \end{itemize}
+        \end{enumerate}
+        These two unsupervised learning tasks are only briefly mentioned, since the used BERT ML-model was already pretrained with these tasks beforehand and only needs to be trained on the SQuAD training set for this project.
+
 
                 
 \pagebreak
     \section{Implementation}
     \label{sec:implementation}
             
-            Transformers is responsible for downloading the machine learning model \texttt{BERT}.
-            \texttt{BERT} is short for \emph{Bi}
-
     % Implementation: how did you implement your approach? which tools were used? show interesting snippets or present your algorithms.
 
-        Placeholder
+        \subsection{The Tools of the Project}
+        \label{sec:-tools-of-the-project}
+            The approach was implemented with the help of PyTorch and huggingface.
+            Huggingface was heavily used in this project, the BERT$_{Base}$ model as well as the corresponding tokenizer and the optimizer \texttt{AdamW} were all retrieved from the transformers package, huggingface provides. 
+            PyTorch is used for the deep learning tasks and provides many useful tools for handling tensors efficiently. 
+            PyTorch also provides a scheduler, that is used to regulate the optimizer of the huggingface transformer package.
+            This is done to assure that the chosen learning rate will be beneficial while the training commences.
+
+            The Weights \& Biases package \texttt{wandb} was used to track metrics of each training run, such as accuracy or the f1-score of the currently trained model.
+            One training run is displayed in the figure \ref{fig:-wandb-metric}.
+
+        \subsection{Training Loop}
+        \label{sec:-training-loop}
+            The main training is done in the function \texttt{train\_model}, that takes the start and end epoch, as well as model, optimizer and scheduler as parameters.
+            This function includes the section for the training, as well as the validation step of the training progress.
+            Before the training section starts, it is made sure that the model is set to training mode with \texttt{model.train()}. This makes sure the weights of the model will be trained in the progress.
+            Next, all metric values get initialized and set to initial values to assure that each training epoch metric has the same initial point and is representative.
+
+        \subsection{Creating a Partial Dataloader}
+        \label{sec:-creating-a-partial-dataloader}
+            For the training, a helper function called \texttt{get\_next\_dataloader} (see figure \ref{fig:-get-next-dataloader}) is introduced, that only loads the dataset partially and converts it do a dataloader instance. This is done, because loading the entire training dataset was not possible, since it was too large to be loaded all at once into the memory.
+            This behavior was double-checked with the help of the monitoring tool \texttt{htop} where it could be seen that the whole memory was being allocated before the training started to crash.
+
+            \begin{figure}[h!]
+                \centering
+                \caption{The Get Next Dataloader Function \cite[\texttt{bert\_training.ipynb}]{innerProject}}
+                \includegraphics[width=0.95\textwidth]{figures/get_next_dataloader.png}
+                \label{fig:-get-next-dataloader}
+            \end{figure}
+        This function takes a small portion of the dataset, and applies all data augmentation steps mentioned in the section \ref{subsec:-data-preprocessing-augmenting} to this chunk and initializes a \texttt{DataLoader} with it, that will be returned to the training loop as the next batch to train on.
+        The first step inside the training loop is to zero the gradients of the optimizer so the tracking of the gradients and the progress of the model are done correctly.
+
+        \subsection{Inside the Main Training Loop}
+        \label{sec:-inside-the-main-training-loop}
+            Next, all required batch values will be put onto the training device. If \texttt{cuda} is available, this option will always be chosen to train the model on it.
+            Once this is done, the batch values are used as the parameters for the ML-model to train on.
+            The output of the model is then used for the metrics \textbf{accuracy, f1 start, f1 end}.
+            Then the loss gets retrieved and the backpropagation of the loss and the optimizer weights is done.
+            The loss function \texttt{AdamW} was chosen as an optimizer, since it is highly popular in literature and often used for such tasks as text comprehension with SQuAD.
+            The acquired metric values then get logged to \texttt{wandb} to compare them with other runs and to track the current progress graphically.
+            \emph{Note: The validation section is similar to the training section, but it is made sure that the gradients will not be changed, and the model is switched to evaluation mode.}
+            After each episode, the model, optimizer and scheduler are stored on the disk with the help of the function \texttt{torch.save()} function.
+
+        \subsection{Loading Model Weights from Disk}
+        \label{sec:-loading-model-weights-from-disk}
+            For making sure that the training process can continue at a later stage, the functions \texttt{get\_last\_saved\_epoch()} and \texttt{init\_model()} can be used to automatically load the last trained model, optimizer and scheduler from disk space.
+
+        \subsection{Dealing with Memory Issues}
+        \label{sec:-dealing-with-memory-issues}
+            Since there were memory leaks or cached memory problems occurring during the training of the model, several measurements had to be taken, to successfully train the model for a longer period of time without running out of memory. One of those measures was already mentioned, namely the partitioning of the training dataset and loading small chunks of data into the memory.
+            But this was not sufficient to fully omit those crashes. That is why numerous variables were removed and then reinitialized during the training, and this actually helped to make the training possible.
+            Later on, a method called \texttt{torch.cuda.empty\_cache()} was found, that may have made those steps redundant.
+        
 
     \section{Evaluation}
     \label{sec:evaluation}
 
     % Evaluation: present and visualize results of your evaluation, explain what do your results mean, why was your approach successful, why not? compare it to some baseline either implemented yourself or from the literature, blogs, Kaggle, etc.
-        Placeholder
+        For the evaluation, several metrics were used to see the progress the training made. Training accuracy and validation accuracy denote how many answers were correctly given for each context and question. The loss values for training and validation correlate with the accuracy, meaning that if the accuracy increases, the loss decreases in the same epoch. This is only natural to happen.
+        
+        Also, another metric was chosen to further test the \emph{F1-score}. This is also regarded as the \emph{harmonic mean} of Precision and Recall. It was chosen as another metric since the F1-score better measures the incorrectly classified cases than the Accuracy metric. 
+        The F1-score was measured for both the start position of an answer and the end position separately to see how those predictions change over time.
 
+        \begin{tcolorbox}
+            \textbf{F1-score}
+            \textit{The harmonic mean of Precision and Recall and gives a better measure of the incorrectly classified cases than the Accuracy metric.}
+            $$\text{F1-score} = 2 \times \frac{Precision \times Recall}{Precision + Recall}$$
+        \end{tcolorbox}
+   
+        \begin{figure}[h!]
+            \centering
+            \caption{Weights \& Biases Metric of Training Run \cite{wandbScreenshot}}
+            \includegraphics[width=0.95\textwidth]{figures/wandb_metrics.png}
+            \label{fig:-wandb-metric}
+        \end{figure}
+        The mentioned metrics are shown in the figure \ref{fig:-wandb-metric}.
+        As can be seen, the f1-scores for both the start and end position of the answer highly alternate. The accuracy and loss both are not improving in the shown graph, and it is highly likely, that many more training epochs are required, to show actual improvements in the performance of the model.
+        Comparing those values to the Kaggle leaderboard with values as high as approximately $97\%$\footnote{Kaggle Leaderboard for Bert: \url{https://www.kaggle.com/c/bert-classification/leaderboard}} for BERT-classification, these results are rather disappointing in the current state and more training would be required to get closer to satisfying values.
+
+        % TODO Add evaluation with full BERT
+
+\pagebreak
     \section{Conclusion}
     \label{sec:conclusion}
     % Conclusions: how can you evaluate the results of your work? what would you recommend for future steps?
 
-        Placeholder
+        The project and the challenges I faced while implementing and researching ways to achieve text comprehension were intriguing. 
+        Some of the largest issues I faced was that most literature only partially presents their findings in practical manners, or online content even was incorrect (code could not be computed because they used different versions of their code for explanation) and this had to be taken care of.
+
+        The biggest issue that I want to make aware of, is the huge amount of memory, that an ML-model such as BERT requires in order to function properly. This starts with disk space, since each epoch that gets stored on disk, requires about 1.3 GB space on it (\emph{Note: This result is an approximation of the disk space needed for the model, scheduler and optimizer for each time it gets stored}).
+        Also, the working memory has to be at least 16 GB, so the process will not run out of memory while the training.
+        The last big issue memory wise is that I often ran out of VRAM many times during the training, which was a result of cached memory fragments that started to add up and crashed the entire process.
+
+        Since the entire process was slowed down a lot just because the required memory was too much, my personal recommendation is to use \texttt{DistilBert} instead of a full BERT ML-model for text comprehension if the used machine for the training isn't really powerful.
 
     \section{Supplementary Materials}
     \label{sec:supplementary-materials}
 
-        owijfgiowjeiofjio
+        The link to the trained BERT-model, optimizer and scheduler can be found at the OneDrive link: \url{https://1drv.ms/u/s!Apv-VJLmVPuUkYxG_Ubom92bnRqCIQ?e=TChQl6}. 
+        These PyTorch files have to be added to the \texttt{bert\_squad/models/} directory.
 
     % Supplementary materials: The report must be submitted as an archive comprising all code and artifacts (data, custom python modules, images, videos, etc.) required for its correct representation, evaluation, and exemplification of your work. If data is too large for a submission, please provide a link where this data can be downloaded from.
 
