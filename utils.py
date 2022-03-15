@@ -1,8 +1,9 @@
 # source: https://www.youtube.com/watch?v=8qwowmiXANQ
-from typing import List
+from typing import Dict, List
 import nltk
 import numpy as np
 import torch
+from functools import reduce
 
 # nltk.download('punkt')
 from nltk.stem.porter import PorterStemmer
@@ -32,17 +33,37 @@ def bag_of_words(tokenized_sentence, all_words_dict: dict) -> List[str]:
             idx = all_words_dict[word]
             bag[idx] = 1
 
-    # for idx, word in enumerate(all_words):
-    #     if word in tokenized_sentence:
-    #         bag[idx] = 1
-
     return bag
+
+def get_average(data: list) -> float:
+    return reduce(lambda a, b: a + b, data) / len(data)
 
 
 def get_training_device():
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-# words = ['Organize', 'organizes', 'organization', 'organizing']
-# stemmed_words = [stemming(word) for word in words]
-# print(stemmed_words)
+def get_all_words_dict(all_words: List[str] = None) -> Dict[str, int]:
+    if all_words is None:
+        all_words = get_all_words()
+
+    all_words_dict: Dict[str, int] = {}
+
+    for idx, word in enumerate(all_words):
+        all_words_dict[word] = idx
+
+    return all_words_dict
+
+def get_all_words() -> List[str]:
+    with open('all_words.txt', 'r') as word_file:
+        word_str = word_file.read()
+        all_words = word_str.split(' ')
+
+        return all_words
+
+def get_tags() -> List[str]:
+    with open('tags.txt', 'r') as tags_file:
+        tags_str = tags_file.read()
+        tags = tags_str.split(' ')
+
+        return tags

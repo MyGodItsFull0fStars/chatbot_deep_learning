@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, dataset
 
-from model import NeuralNet
+from model import NeuralNetSmall
 
 import numpy as np
 
@@ -101,7 +101,7 @@ def main():
                               num_workers=0)
 
     device = get_training_device()
-    model = NeuralNet(input_size, hidden_size, output_size).to(device)
+    model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
 
     # loss and optimizer
     criterion = nn.CrossEntropyLoss()

@@ -1,117 +1,124 @@
 # dataset source: https://rajpurkar.github.io/SQuAD-explorer/
-import json
 from typing import List, Tuple
-
-from torch.utils import data
-from utils import (
-    tokenize,
-    stemming,
-    bag_of_words,
-    get_sorted_unique_string_list,
-    get_training_device,
-)
-from copy import deepcopy
 
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader, dataset
+import wandb
 
-from model import NeuralNet
-
-import numpy as np
-
-from squad import *
-from constants import *
-
-SQUAD_FILE_PATH: str = "squad_dataset.json"
-
-
-class TrainData:
-    def __init__(self) -> None:
-
-        self.ignore_words = ["?", "!", ".", ",", ";"]
-        self.all_words = []
-        self.X_y = []
-        self.tags = []
-
-        with open(SQUAD_FILE_PATH, "r") as file:
-            squad_json = json.load(file)
-
-            squad = Squad(squad_json)
-
-            squad_data_list = squad.data_list
-
-            print("get tags, all words and X_y set")
-            for squad_data in squad_data_list:
-
-                tag = squad_data.title
-                self.tags.append(tag)
-                for paragraph in squad_data.paragraphs:
-                    # TODO maybe insert again for better results
-                    # self.tags.append(paragraph.context)
-
-                    for qas in paragraph.question_answer_sets:
-                        question = tokenize(qas.question)
-                        self.all_words.extend(question)
-                        self.X_y.append((question, tag))
-
-            print("stem all words")
-            self.all_words = [
-                stemming(word)
-                for word in self.all_words
-                if word not in self.ignore_words
-            ]
-            self.all_words = get_sorted_unique_string_list(self.all_words)
-            self.tags = get_sorted_unique_string_list(self.tags)
-
-            self.X_train = []
-            self.y_train = []
-
-            print("create bag of words")
-
-            all_words_dict = self.get_all_words_dict()
-            # del self.all_words
-
-            for (pattern_sentence, tag) in self.X_y:
-                bag = bag_of_words(pattern_sentence, all_words_dict)
-                self.X_train.append(bag)
-
-                label = self.tags.index(tag)
-                self.y_train.append(label)
-
-            self.X_train = np.array(self.X_train)
-            self.y_train = np.array(self.y_train)
-
-    def get_X_y_train(self):
-        return self.X_train, self.y_train
-
-    def get_all_words_dict(self) -> Dict[str, int]:
-        all_words_dict = {}
-
-        for idx, word in enumerate(self.all_words):
-            all_words_dict[word] = idx
-
-        return all_words_dict
-
-
-class ChatDataSet(Dataset):
-    def __init__(self, X_train, y_train) -> None:
-        super().__init__()
-        self.n_samples = len(X_train)
-        self.X_data_ = deepcopy(X_train)
-        self.y_data_ = deepcopy(y_train)
-
-    # dataset[idx]
-    def __getitem__(self, index) -> Tuple:
-        return self.X_data_[index], self.y_data_[index]
-
-    def __len__(self) -> int:
-        return self.n_samples
+import json_utils
+from constants import (HIDDEN_SIZE, INPUT_SIZE, MODEL_STATE, OUTPUT_SIZE,
+                       all_words, tags, device)
+from model import NeuralNetSmall, get_model_data, save_model
+from model_utils import get_data_loader, load_model
+from utils import get_training_device
 
 
 def main():
-    train_data = TrainData()
+    wandb.init()
 
+    torch_file_path_load: str = 'test_train.pth'
+
+    # Hyperparameters
+    batch_size: int = 128
+    input_size = len(all_words)
+    output_size = len(tags)
+
+    # hidden_size = int(np.mean([input_size, output_size]))
+    hidden_size = int(output_size * 1.5)
+
+    learning_rate = 0.001
+    num_epoch = 100
+    num_workers = 1
+
+    # amount of maximum data sets available
+    max_data_set = 442
+    step = 20
+
+    wandb.config = {
+        'learning_rate': learning_rate,
+        'epochs': num_epoch,
+        'batch_size': batch_size,
+        'input_size': input_size,
+        'hidden_size': hidden_size,
+        'output_size': output_size,
+        'device': device
+    }
+
+    model = get_model(torch_file_path_load, input_size,
+                      hidden_size, output_size, device)
+
+    # prepare json file
+    dir_name: str = 'models_1.5_hl'
+    json_file_name: str = 'accuracy_loss_data.json'
+    json_model_name: str = f'NeuralNetSmall(input:{input_size}, hidden:{hidden_size}, output:{output_size})'
+
+    wandb.config['json_model_name'] = json_model_name
+
+    json_utils.init_accuracy_loss_json_file(
+        json_model_name, dir_name, json_file_name
+    )
+    loss_list: List[Tuple[str, float]] = []
+
+    print('start training')
+    for epoch in range(num_epoch):
+        print(f'epoch: {epoch + 1}')
+        # loss and optimizer
+        criterion, optimizer = get_criterion_and_optimizer(
+            model, learning_rate)
+        current_epoch_average_loss: List[float] = []
+
+        for from_range in range(0, max_data_set, step):
+
+            train_loader = get_data_loader(
+                from_range, from_range + step, batch_size, num_workers)
+
+            loss = training_loop(train_loader, model, criterion, optimizer)
+            current_epoch_average_loss.append(loss.item())
+            print(
+                f'from_range: {from_range} to_range: {from_range + step} current_loss: {loss}')
+
+        print(f'\nepoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}\n')
+
+        loss_list.append((f'loss_epoch_{epoch + 1}', loss.item()))
+
+        wandb.log({'loss': loss})
+        wandb.watch(model)
+
+        data = get_model_data(model, input_size, output_size,
+                              hidden_size, all_words, tags)
+        save_model(
+            data, f'{dir_name}/small_model_hidden_1.5_of_output_epoch_{epoch + 1}.pth')
+
+        # TODO calculate accuracy and precision for each model
+        wandb.log({
+            'accuracy': 0,
+            'precision': 0,
+            'recall': 0,
+            'f1_score': 0
+        })
+
+    json_utils.update_loss(dir_name, json_file_name, loss_list)
+
+    print('done')
+
+
+def get_model(torch_file_path: str, input_size: int, hidden_size: int, output_size: int, device) -> nn.Module:
+    # if a pretrained model exists, the weights get loaded into the model
+    model_data = load_model(torch_file_path)
+    if model_data is not None:
+        print('pretrained model found')
+        input_size = model_data[INPUT_SIZE]
+        output_size = model_data[OUTPUT_SIZE]
+        hidden_size = model_data[HIDDEN_SIZE]
+        model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
+        model.load_state_dict(model_data[MODEL_STATE])
+    else:
+        model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
+
+    return model
+
+
+<<<<<<< HEAD
     # Hyperparameters
     batch_size: int = 32
     input_size = len(train_data.all_words)
@@ -121,58 +128,36 @@ def main():
     num_epoch = 1000
 
     X_train, y_train = train_data.get_X_y_train()
-
-    dataset = ChatDataSet(X_train, y_train)
-
-    train_loader = DataLoader(
-        dataset=dataset, batch_size=batch_size, shuffle=True, num_workers=5
-    )
-
-    device = get_training_device()
-    model = NeuralNet(input_size, hidden_size, output_size).to(device)
-
-    # loss and optimizer
+=======
+def get_criterion_and_optimizer(model: nn.Module, learning_rate: float):
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+>>>>>>> merge-branch
 
-    print("Start training")
-
-    # training loop
-    for epoch in range(num_epoch):
-        for (words, labels) in train_loader:
-            words = words.to(device)
-            labels = labels.to(dtype=torch.long).to(device)
-
-            # forward
-            outputs = model(words)
-            # if y would be one-hot, we must apply
-            # labels = torch.max(labels, 1)[1]
-            loss = criterion(outputs, labels)
-
-            # backward and optimizer step
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-        if (epoch + 1) % 100 == 0:
-            print(f"epoch {epoch + 1}/{num_epoch}, loss={loss.item():4f}")
-
-    print(f"final loss={loss.item():4f}")
-
-    data = {
-        MODEL_STATE: model.state_dict(),
-        INPUT_SIZE: input_size,
-        OUTPUT_SIZE: output_size,
-        HIDDEN_SIZE: hidden_size,
-        ALL_WORDS: train_data.all_words,
-        TAGS: train_data.tags,
-    }
-
-    file_name = "data.pth"
-    torch.save(data, file_name)
-
-    print(f"training complete. file saved to {file_name}")
+    return criterion, optimizer
 
 
-if __name__ == "__main__":
+def training_loop(train_loader, model, criterion, optimizer):
+    device = get_training_device()
+
+    for (words, labels) in train_loader:
+        # Move tensors to the configured device
+        words = words.to(device)
+        labels = labels.to(dtype=torch.long).to(device)
+
+        # forward
+        outputs = model(words)
+        # if y would be one-hot, we must apply
+        # labels = torch.max(labels, 1)[1]
+        loss = criterion(outputs, labels)
+
+        # backward and optimizer step
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    return loss
+
+
+if __name__ == '__main__':
     main()

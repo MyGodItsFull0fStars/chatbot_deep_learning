@@ -1,8 +1,8 @@
 import random
 import json
 import torch
-from model import NeuralNet
-from utils import bag_of_words, tokenize, get_training_device
+from model import NeuralNetSmall
+from utils import bag_of_words, tokenize, get_training_device, get_all_words_dict
 
 from constants import *
 
@@ -24,7 +24,8 @@ def chat_loop(chat_model):
             break
 
         sentence = tokenize(sentence)
-        X = bag_of_words(sentence, all_words)
+        X = bag_of_words(sentence, get_all_words_dict(all_words))
+ 
         # 1 row because we have one sample
         # X.shape[0] number of columns
         X = X.reshape(1, X.shape[0])
@@ -33,7 +34,7 @@ def chat_loop(chat_model):
         output = chat_model(X)
         _, predicted = torch.max(output, dim=1)
         tag = tags[predicted.item()]
-
+   
         probs = torch.softmax(output, dim=1)
         prob = probs[0][predicted.item()]
 
@@ -58,7 +59,7 @@ with open('intents.json', 'r') as file:
     tags = data[TAGS]
     model_state = data[MODEL_STATE]
 
-    model = NeuralNet(input_size, hidden_size, output_size).to(device)
+    model = NeuralNetSmall(input_size, hidden_size, output_size).to(device)
 
     # load the learned parameters
     model.load_state_dict(model_state)

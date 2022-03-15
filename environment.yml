@@ -5,5 +5,10 @@ channels:
 dependencies:
   - python=3.9
   - anaconda
+  - torchaudio
+  - torchvision
   - pytorch
+  - tensorboard
+  - python-levenshtein
+  - fuzzywuzzy
 prefix: /Users/christianbauer/opt/anaconda3/envs/chat_bot_env
