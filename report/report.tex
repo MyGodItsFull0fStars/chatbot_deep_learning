@@ -296,7 +296,10 @@
             \end{itemize}
         \end{enumerate}
         These two unsupervised learning tasks are only briefly mentioned, since the used BERT ML-model was already pretrained with these tasks beforehand and only needs to be trained on the SQuAD training set for this project.
-
+        After this pretraining, the model is ready for the SQuAD dataset.
+        Now the context and question of the SQuAD entries will be provided to the model, and the returned positions of the start and end index are the most probable position of the answer according to the current BERT model.
+        With the help of the \texttt{AdamW} optimizer, these provided positions will be improved over time. 
+        % https://blog.scaleway.com/understanding-text-with-bert/
 
                 
 \pagebreak
