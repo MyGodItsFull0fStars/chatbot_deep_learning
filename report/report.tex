@@ -241,6 +241,7 @@
 
         The basic idea of Attention is that the model will try to predict an output word based on the most relevant information of the input, so it only takes parts of the given input into account instead of the whole sentence.
         This means, attention tries to give more importance to a few input words.
+        This is done by not only passing the last hidden state (also called the \emph{context vector}) of the Encoder section to the Decoder, but all hidden states of the Encoder section will be send to the Decoder.
 
         Three types of attention layers are used in BERT, the "Self Attention", "Scaled Dot-Product Attention" and the "Multi Head Attention".
         A short introduction to all three concepts can be found at "Understanding Attention Mechanism: Natural Language Processing" \cite{understandingAttention}.
