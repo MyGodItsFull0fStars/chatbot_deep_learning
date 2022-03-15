@@ -15,6 +15,8 @@
 
 \maketitle
 
+
+
 % Report
 
 % A report should be a 6-8 pages long document structured as a research paper, as shown below. You may modify this structure, but the suggested list is a good starting point.
@@ -268,6 +270,8 @@
     \label{sec:-bert}
 
         \textbf{B}idirectional \textbf{E}ncoder \textbf{R}epresentation from \textbf{T}ransformer, often abbreviated to BERT heavily relies on the concept of \emph{Attention} and the usage of \emph{Transformers} that are presented in the famous paper "Attention is All You Need"\cite{vaswani2017attention}.
+        This is the machine learning architecture that is chosen for the text comprehension of SQuAD.
+        BERT was able to surpass the human benchmark for the SQuAD dataset.
         Inside the ML-model, there is a multilayer bidirectional transformer encoder structure, hence the name of BERT and in general it is differentiated between two types of BERT models, that are named BERT$_{Base}$ and BERT$_{Large}$.
         The BERT$_{Base}$ model has 12 layers of transformer blocks, a hidden size of $768$ and 12 self-attention heads as well as 110 million trainable parameters. \textbf{Note: This is the model type I used in this project.}
 
