@@ -385,8 +385,13 @@
             \label{fig:-wandb-metric}
         \end{figure}
         The mentioned metrics are shown in the figure \ref{fig:-wandb-metric}.
-        As can be seen, the f1-scores for both the start and end position of the answer highly alternate. The accuracy and loss both are not improving in the shown graph, and it is highly likely, that many more training epochs are required, to show actual improvements in the performance of the model.
+        As can be seen, the f1-scores for both the start and end position of the answer highly alternate. (Later on I found out that a mistake happened while retrieving the F1-score so this value is meaningless). The accuracy and loss both are not improving in the shown graph, and it is highly likely, that many more training epochs are required, to show actual improvements in the performance of the model.
         Comparing those values to the Kaggle leaderboard with values as high as approximately $97\%$\footnote{Kaggle Leaderboard for Bert: \url{https://www.kaggle.com/c/bert-classification/leaderboard}} for BERT-classification, these results are rather disappointing in the current state and more training would be required to get closer to satisfying values.
+        \emph{Note: The used model, optimizer and scheduler can be found in the provided OneDrive link and are all from the epoch 7.}
+
+        Furthermore, many more training epochs were done, but the results were even worse than the once shown above.
+        Additional $200$ epochs did not imporve the results in any case as was hoped, and since BERT is an enourmous model, the assumption that there are even more training cycles necessary seems plausable.
+        This larger training cycle can be found at \url{https://wandb.ai/my-god-its-full-of-stars/BERT%20Training/runs/1bu6bzc6?workspace=user-my-god-its-full-of-stars}.
 
         % TODO Add evaluation with full BERT
 
